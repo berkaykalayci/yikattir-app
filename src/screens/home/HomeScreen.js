@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
-import API_BASE_URL from '../../config/api';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusinesses } from '../../store/BusinessContext';
