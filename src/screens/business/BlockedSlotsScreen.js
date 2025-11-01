@@ -15,8 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
-
-const API_BASE_URL = 'http://192.168.1.20:3001';
+import API_BASE_URL from '../../config/api';
 
 export default function BlockedSlotsScreen({ navigation }) {
   const { user, token } = useAuth();

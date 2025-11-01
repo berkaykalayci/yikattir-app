@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 import * as ImagePicker from 'expo-image-picker';
 
-const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function BusinessImageSettingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();

@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusinesses } from '../../store/BusinessContext';
+import API_BASE_URL from '../../config/api';
 
 // Şehir listesi - CitySelectionScreen'den alındı
 const CITIES = [
@@ -93,7 +95,6 @@ const CITIES = [
   { id: 81, name: 'Düzce', plate: '81' }
 ];
 
-const API_BASE_URL = 'http://192.168.1.20:3001';
 
 
 

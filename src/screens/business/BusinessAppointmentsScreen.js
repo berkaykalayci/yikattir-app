@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, Alert, 
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 
-const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function BusinessAppointmentsScreen({ navigation }) {
   const [selectedTab, setSelectedTab] = useState('pending');

@@ -2,8 +2,7 @@ import React, { createContext, useContext, useMemo, useState, useEffect } from '
 import axios from 'axios';
 import io from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
-
-const API_BASE_URL = 'http://192.168.1.20:3001';
+import API_BASE_URL from '../config/api';
 
 const BusinessContext = createContext(null);
 

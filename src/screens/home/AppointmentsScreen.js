@@ -8,8 +8,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAppointments } from '../../contexts/AppointmentsContext';
 import RateAppointmentScreen from './RateAppointmentScreen';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
-const API_BASE_URL = 'http://192.168.1.20:3001';
 
 const SAMPLE_APPOINTMENTS = [
   {

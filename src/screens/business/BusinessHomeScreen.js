@@ -5,8 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import io from 'socket.io-client';
-
-const API_BASE_URL = 'http://192.168.1.20:3001';
+import API_BASE_URL from '../../config/api';
 
 export default function BusinessHomeScreen({ navigation }) {
   console.log('=== BusinessHomeScreen MOUNT OLDU ===');

@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 import io from 'socket.io-client';
 
-const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function BusinessReviewsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
