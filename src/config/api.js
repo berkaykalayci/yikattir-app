@@ -6,12 +6,14 @@
 // Windows: ipconfig | findstr IPv4
 
 // Production için: Gerçek sunucu URL'nizi buraya yazın
+// Fiziksel cihazdan test ediyorsanız: Kendi IP adresinizi buraya yazın
 const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3001'  // Simülatör/Emülatör için
-  : 'http://localhost:3001'; // Production için değiştirin
+  ? 'http://192.168.1.20:3001'  // Fiziksel cihaz için yerel IP
+  : 'http://192.168.1.20:3001'; // Production için değiştirin
 
-// Eğer fiziksel cihazdan test ediyorsanız, aşağıdaki gibi kendi IP'nizi kullanın:
-// const API_BASE_URL = 'http://YOUR_LOCAL_IP:3001';
+// Simülatör/Emülatör kullanıyorsanız:
+// const API_BASE_URL = 'http://localhost:3001'; // iOS Simülatör
+// const API_BASE_URL = 'http://10.0.2.2:3001'; // Android Emülatör
 
 export default API_BASE_URL;
 
