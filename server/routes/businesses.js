@@ -212,12 +212,24 @@ router.get('/:businessId/available-slots', async (req, res) => {
       select: { time: true },
     });
 
+    // Aynı gün için engellenmiş saatler
+    const blockedSlots = await prisma.blockedSlot.findMany({
+      where: {
+        businessId,
+        date: { gte: targetDate, lt: nextDay },
+      },
+      select: { time: true },
+    });
+
     // Her time stringi için kaç randevu olduğunu say
     const timeToCount = existingAppointments.reduce((acc, ap) => {
       const t = ap.time;
       acc[t] = (acc[t] || 0) + 1;
       return acc;
     }, {});
+
+    // Engellenmiş saatleri Set olarak sakla
+    const blockedTimes = new Set(blockedSlots.map(bs => bs.time));
 
     // Zaman stringini dakika cinsinden çeviriciler
     const parseHm = (hm) => {
@@ -239,8 +251,15 @@ router.get('/:businessId/available-slots', async (req, res) => {
     for (let t = startMin; t <= endMin - interval; t += interval) {
       const label = formatHm(t);
       const bookedCount = timeToCount[label] || 0;
-      const available = bookedCount < (business.capacity || 1);
-      slots.push({ time: label, available, bookedCount, capacity: business.capacity || 1 });
+      const isBlocked = blockedTimes.has(label);
+      const available = !isBlocked && bookedCount < (business.capacity || 1);
+      slots.push({ 
+        time: label, 
+        available, 
+        bookedCount, 
+        capacity: business.capacity || 1,
+        isBlocked 
+      });
     }
 
     return res.json({ date, intervalMin: interval, slots });

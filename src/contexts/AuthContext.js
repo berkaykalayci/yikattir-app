@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 const AuthContext = createContext();
 
@@ -39,10 +39,18 @@ export const AuthProvider = ({ children }) => {
         
         // Token'ın geçerli olup olmadığını kontrol et
         try {
-          await axios.get(`${API_BASE_URL}/auth/profile`);
+          const profileResponse = await Promise.race([
+            axios.get(`${API_BASE_URL}/auth/profile`),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+          ]);
         } catch (error) {
-          // Token geçersizse temizle
-          await logout();
+          // Token geçersizse veya timeout olursa temizle
+          console.log('Token kontrolü başarısız, çıkış yapılıyor:', error.message);
+          setUser(null);
+          setToken(null);
+          await AsyncStorage.removeItem('authToken');
+          await AsyncStorage.removeItem('user');
+          delete axios.defaults.headers.common['Authorization'];
         }
       }
     } catch (error) {

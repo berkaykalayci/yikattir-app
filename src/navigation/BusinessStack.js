@@ -10,6 +10,7 @@ import IncomeReportsScreen from '../screens/business/IncomeReportsScreen';
 import PaymentSettingsScreen from '../screens/business/PaymentSettingsScreen';
 import BusinessReviewsScreen from '../screens/business/BusinessReviewsScreen';
 import BusinessImageSettingsScreen from '../screens/business/BusinessImageSettingsScreen';
+import BlockedSlotsScreen from '../screens/business/BlockedSlotsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +34,7 @@ export default function BusinessStack() {
       <Stack.Screen name="PaymentSettings" component={PaymentSettingsScreen} />
       <Stack.Screen name="BusinessReviews" component={BusinessReviewsScreen} />
       <Stack.Screen name="BusinessImageSettings" component={BusinessImageSettingsScreen} />
+      <Stack.Screen name="BlockedSlots" component={BlockedSlotsScreen} />
     </Stack.Navigator>
   );
 }

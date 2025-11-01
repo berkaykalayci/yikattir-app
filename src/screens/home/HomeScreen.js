@@ -93,7 +93,7 @@ const CITIES = [
   { id: 81, name: 'Düzce', plate: '81' }
 ];
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 
 
@@ -190,27 +190,13 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  // Socket.IO: Şehir odasına katıl ve işletme değişimlerini dinle
+  // Socket.IO: Şehir odasına katıl (sadece şehir bazlı filtreleme için)
   useEffect(() => {
     const cityName = selectedCity?.name || user?.city;
     if (!cityName) return;
     const socket = io(API_BASE_URL, { transports: ['websocket'], forceNew: true });
     socket.on('connect', () => {
       socket.emit('join:city', cityName);
-    });
-    socket.on('businesses:changed', (payload) => {
-      if (!payload?.city) return;
-      const current = (selectedCity?.name || user?.city || '').toLowerCase();
-      if (payload.city.toLowerCase() === current) {
-        // useBusinesses store içeriği server push’undan bağımsız; burada sadece yeniden yükleme tetikleyiniz
-        // Basit çözüm: axios ile listeyi çekip store’a yazmak yerine, kullanıcı zaten useBusinesses’tan geliyor.
-        // Burada sadece küçük bir state flip ile re-render tetikleyelim (query dokunmadan):
-        setQuery((q) => q + '');
-      }
-    });
-    socket.on('reviews:changed', (payload) => {
-      // Rating güncellenince öne çıkanlar/tüm liste yeniden hesaplanır (re-render tetikle)
-      setQuery((q) => q + '');
     });
     return () => {
       socket.disconnect();
@@ -371,19 +357,6 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.discountBadge}>
           <Text style={styles.discountText}>{item.discount}</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.favoriteButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            toggleFavorite(item.id);
-          }}
-        >
-          <Ionicons 
-            name={favorites.has(item.id) ? "heart" : "heart-outline"} 
-            size={20} 
-            color={favorites.has(item.id) ? "#ef4444" : "white"} 
-          />
-        </TouchableOpacity>
       </View>
       
       <View style={styles.featuredContent}>
@@ -403,6 +376,20 @@ export default function HomeScreen({ navigation }) {
           ))}
         </View>
       </View>
+      
+      <TouchableOpacity 
+        style={styles.favoriteButton}
+        onPress={(e) => {
+          e.stopPropagation();
+          toggleFavorite(item.id);
+        }}
+      >
+        <Ionicons 
+          name={favorites.has(item.id) ? "heart" : "heart-outline"} 
+          size={20} 
+          color={favorites.has(item.id) ? "#ef4444" : "#9ca3af"} 
+        />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -631,7 +618,7 @@ const styles = StyleSheet.create({
   discountBadge: {
     position: 'absolute',
     top: 12,
-    right: 12,
+    left: 12,
     backgroundColor: '#ef4444',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -716,9 +703,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   favoriteButtonSmall: {
     width: 36,

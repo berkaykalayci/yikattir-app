@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 // Yeni randevu oluştur
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { businessId, serviceId, date, time, vehicleType, plate, notes, totalPrice } = req.body;
+    const { businessId, serviceId, selectedServices, date, time, vehicleType, plate, notes, totalPrice } = req.body;
     const customerId = req.user.userId;
 
     if (!businessId || !serviceId || !date || !time || !vehicleType || !plate || !totalPrice) {
@@ -40,6 +40,7 @@ router.post('/', authenticateToken, async (req, res) => {
         businessId,
         customerId,
         serviceId,
+        selectedServices: selectedServices || null,
         date: new Date(date),
         time,
         vehicleType,
@@ -108,7 +109,7 @@ router.get('/customer/:customerId', async (req, res) => {
         service: true,
         reviews: true,
       },
-      orderBy: { date: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     res.json(appointments);

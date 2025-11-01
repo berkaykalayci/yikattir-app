@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function RateAppointmentScreen({ navigation, route, onSuccess }) {
   const { appointment } = route.params || {};

@@ -9,7 +9,7 @@ import { useAppointments } from '../../contexts/AppointmentsContext';
 import RateAppointmentScreen from './RateAppointmentScreen';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 const SAMPLE_APPOINTMENTS = [
   {
@@ -246,9 +246,6 @@ export default function AppointmentsScreen({ navigation }) {
     <View style={styles.container}>
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) }]}>
         <Text style={styles.title}>Randevularım</Text>
-        <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="filter-outline" size={24} color="white" />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.tabContainer}>
@@ -345,14 +342,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: 'white',
-  },
-  filterButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   tabContainer: {
     flexDirection: 'row',

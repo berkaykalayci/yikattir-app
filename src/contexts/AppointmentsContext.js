@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 const AppointmentsContext = createContext(null);
 

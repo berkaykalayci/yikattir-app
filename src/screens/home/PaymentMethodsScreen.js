@@ -1,30 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../contexts/AuthContext';
+import axios from 'axios';
 
-const SAMPLE_CARDS = [
-  {
-    id: 1,
-    type: 'visa',
-    lastFour: '1234',
-    expiryDate: '12/25',
-    isDefault: true,
-    cardHolder: 'Müşteri Adı'
-  },
-  {
-    id: 2,
-    type: 'mastercard',
-    lastFour: '5678',
-    expiryDate: '08/26',
-    isDefault: false,
-    cardHolder: 'Müşteri Adı'
-  }
-];
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function PaymentMethodsScreen({ navigation }) {
-  const [cards, setCards] = useState(SAMPLE_CARDS);
+  const [cards, setCards] = useState([]);
+  const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    loadCards();
+  }, []);
+
+  const loadCards = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/payment-methods/customer/${user.id}`, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
+      setCards(response.data);
+    } catch (error) {
+      console.error('Kartlar yüklenirken hata:', error);
+      setCards([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getCardIcon = (type) => {
     switch (type) {
@@ -48,13 +54,24 @@ export default function PaymentMethodsScreen({ navigation }) {
     }
   };
 
-  const setAsDefault = (id) => {
-    setCards(prev => 
-      prev.map(card => ({
-        ...card,
-        isDefault: card.id === id
-      }))
-    );
+  const setAsDefault = async (id) => {
+    try {
+      await axios.patch(`${API_BASE_URL}/payment-methods/${id}/default`, {}, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
+      
+      setCards(prev => 
+        prev.map(card => ({
+          ...card,
+          isDefault: card.id === id
+        }))
+      );
+      
+      Alert.alert('Başarılı', 'Kart varsayılan olarak ayarlandı');
+    } catch (error) {
+      console.error('Kart varsayılan yapılırken hata:', error);
+      Alert.alert('Hata', 'Kart varsayılan yapılamadı');
+    }
   };
 
   const deleteCard = (id) => {
@@ -66,7 +83,19 @@ export default function PaymentMethodsScreen({ navigation }) {
         { 
           text: 'Sil', 
           style: 'destructive',
-          onPress: () => setCards(prev => prev.filter(card => card.id !== id))
+          onPress: async () => {
+            try {
+              await axios.delete(`${API_BASE_URL}/payment-methods/${id}`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+              });
+              
+              setCards(prev => prev.filter(card => card.id !== id));
+              Alert.alert('Başarılı', 'Kart başarıyla silindi');
+            } catch (error) {
+              console.error('Kart silinirken hata:', error);
+              Alert.alert('Hata', 'Kart silinemedi');
+            }
+          }
         }
       ]
     );
@@ -77,11 +106,11 @@ export default function PaymentMethodsScreen({ navigation }) {
       <View style={styles.cardHeader}>
         <View style={styles.cardInfo}>
           <Ionicons 
-            name={getCardIcon(card.type)} 
+            name={getCardIcon(card.cardType)} 
             size={24} 
-            color={getCardColor(card.type)} 
+            color={getCardColor(card.cardType)} 
           />
-          <Text style={styles.cardType}>{card.type.toUpperCase()}</Text>
+          <Text style={styles.cardType}>{card.cardType.toUpperCase()}</Text>
           {card.isDefault && (
             <View style={styles.defaultBadge}>
               <Text style={styles.defaultText}>Varsayılan</Text>

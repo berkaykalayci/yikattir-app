@@ -6,7 +6,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 const SAMPLE_FAVORITES = [
   {
@@ -185,9 +185,6 @@ export default function FavoritesScreen({ navigation }) {
     <View style={styles.container}>
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) }]}>
         <Text style={styles.title}>Favorilerim</Text>
-        <TouchableOpacity style={styles.searchButton}>
-          <Ionicons name="search-outline" size={24} color="white" />
-        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -232,14 +229,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: 'white',
-  },
-  searchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   listContainer: {
     padding: 16,

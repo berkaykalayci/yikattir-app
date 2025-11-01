@@ -202,6 +202,23 @@ router.get('/profile', authenticateToken, async (req, res) => {
         city: true,
         district: true,
         createdAt: true,
+        businesses: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            city: true,
+            district: true,
+            address: true,
+            rating: true,
+            isActive: true,
+            isOpen: true,
+            capacity: true,
+            slotIntervalMin: true,
+            imageUrl: true,
+            logoUrl: true,
+          }
+        }
       },
     });
 

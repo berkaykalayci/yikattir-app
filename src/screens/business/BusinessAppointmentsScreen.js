@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, Alert, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function BusinessAppointmentsScreen({ navigation }) {
   const [selectedTab, setSelectedTab] = useState('pending');
@@ -14,6 +14,7 @@ export default function BusinessAppointmentsScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [businessId, setBusinessId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
@@ -95,17 +96,32 @@ export default function BusinessAppointmentsScreen({ navigation }) {
         id: apt.id,
         customer: apt.customer?.name || 'Müşteri',
         service: apt.service?.name || 'Hizmet',
+        selectedServices: apt.selectedServices || null,
         time: apt.time,
         date: apt.date,
         status: apt.status.toLowerCase(),
         phone: apt.customer?.phone || 'Telefon yok',
         price: `₺${apt.totalPrice}`,
         customerId: apt.customerId,
-        serviceId: apt.serviceId
+        serviceId: apt.serviceId,
+        updatedAt: apt.updatedAt,
+        createdAt: apt.createdAt
       }));
       
-      console.log('Formatlanmış randevular:', formattedAppointments);
-      setAppointments(formattedAppointments);
+      // Tamamlanan randevuları tamamlama sırasına göre sırala (en son tamamlanan en üstte)
+      const sortedAppointments = formattedAppointments.sort((a, b) => {
+        // Tamamlanan randevular için updatedAt'e göre sırala (en yeni en üstte)
+        if (a.status === 'completed' && b.status === 'completed') {
+          return new Date(b.updatedAt) - new Date(a.updatedAt);
+        }
+        // Diğer durumlar için tarih ve saate göre sırala
+        const aDateTime = new Date(`${a.date}T${a.time}:00`);
+        const bDateTime = new Date(`${b.date}T${b.time}:00`);
+        return aDateTime - bDateTime;
+      });
+      
+      console.log('Formatlanmış ve sıralanmış randevular:', sortedAppointments);
+      setAppointments(sortedAppointments);
     } catch (error) {
       console.error('Randevular yüklenirken hata:', error);
       Alert.alert('Hata', 'Randevular yüklenirken bir hata oluştu');
@@ -267,7 +283,24 @@ export default function BusinessAppointmentsScreen({ navigation }) {
       <View style={styles.appointmentBody}>
         <View style={styles.customerInfo}>
           <Text style={styles.customerName}>{item.customer}</Text>
-          <Text style={styles.serviceName}>{item.service}</Text>
+          
+          {/* Hizmet gösterimi */}
+          {item.selectedServices && item.selectedServices.length > 0 ? (
+            <View style={styles.servicesContainer}>
+              <Text style={styles.servicesTitle}>Seçilen Hizmetler:</Text>
+              {item.selectedServices.map((service, index) => (
+                <View key={index} style={styles.serviceItem}>
+                  <Ionicons name="checkmark-circle" size={14} color="#10b981" />
+                  <Text style={styles.serviceText}>
+                    {service.name} - ₺{service.price}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.serviceName}>{item.service}</Text>
+          )}
+          
           <View style={styles.phoneContainer}>
             <Ionicons name="call-outline" size={14} color="#6b7280" />
             <Text style={styles.phoneText}>{item.phone}</Text>
@@ -316,7 +349,10 @@ export default function BusinessAppointmentsScreen({ navigation }) {
             </TouchableOpacity>
           </>
         )}
-        <TouchableOpacity style={styles.detailsButton}>
+        <TouchableOpacity 
+          style={styles.detailsButton}
+          onPress={() => setSelectedAppointment(item)}
+        >
           <Ionicons name="information-circle-outline" size={16} color="#0F4C4C" />
           <Text style={styles.detailsText}>Detaylar</Text>
         </TouchableOpacity>
@@ -369,6 +405,118 @@ export default function BusinessAppointmentsScreen({ navigation }) {
         refreshing={refreshing}
         onRefresh={onRefresh}
       />
+
+      {/* Randevu Detay Modal */}
+      <Modal
+        visible={selectedAppointment !== null}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSelectedAppointment(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Randevu Detayları</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setSelectedAppointment(null)}
+              >
+                <Ionicons name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedAppointment && (
+              <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                <View style={styles.detailRow}>
+                  <Ionicons name="person" size={20} color="#0F4C4C" />
+                  <Text style={styles.detailLabel}>Müşteri:</Text>
+                  <Text style={styles.detailValue}>{selectedAppointment.customer}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Ionicons name="call" size={20} color="#0F4C4C" />
+                  <Text style={styles.detailLabel}>Telefon:</Text>
+                  <Text style={styles.detailValue}>{selectedAppointment.phone}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Ionicons name="calendar" size={20} color="#0F4C4C" />
+                  <Text style={styles.detailLabel}>Tarih:</Text>
+                  <Text style={styles.detailValue}>{selectedAppointment.date}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Ionicons name="time" size={20} color="#0F4C4C" />
+                  <Text style={styles.detailLabel}>Saat:</Text>
+                  <Text style={styles.detailValue}>{selectedAppointment.time}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Ionicons name="car" size={20} color="#0F4C4C" />
+                  <Text style={styles.detailLabel}>Araç Tipi:</Text>
+                  <Text style={styles.detailValue}>{selectedAppointment.vehicleType}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Ionicons name="card" size={20} color="#0F4C4C" />
+                  <Text style={styles.detailLabel}>Plaka:</Text>
+                  <Text style={styles.detailValue}>{selectedAppointment.plate}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Ionicons name="cash" size={20} color="#0F4C4C" />
+                  <Text style={styles.detailLabel}>Tutar:</Text>
+                  <Text style={styles.detailValue}>{selectedAppointment.price}</Text>
+                </View>
+
+                {/* Çoklu hizmet gösterimi */}
+                {selectedAppointment.selectedServices && selectedAppointment.selectedServices.length > 0 ? (
+                  <View style={styles.servicesDetailRow}>
+                    <Ionicons name="list" size={20} color="#0F4C4C" />
+                    <Text style={styles.detailLabel}>Hizmetler:</Text>
+                    <View style={styles.selectedServicesList}>
+                      {selectedAppointment.selectedServices.map((service, index) => (
+                        <View key={index} style={styles.serviceDetailItem}>
+                          <Ionicons name="checkmark-circle" size={14} color="#10b981" />
+                          <Text style={styles.serviceDetailText}>
+                            {service.name} - ₺{service.price}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.detailRow}>
+                    <Ionicons name="construct" size={20} color="#0F4C4C" />
+                    <Text style={styles.detailLabel}>Hizmet:</Text>
+                    <Text style={styles.detailValue}>{selectedAppointment.service}</Text>
+                  </View>
+                )}
+
+                <View style={styles.detailRow}>
+                  <Ionicons name="flag" size={20} color="#0F4C4C" />
+                  <Text style={styles.detailLabel}>Durum:</Text>
+                  <Text style={[
+                    styles.detailValue,
+                    styles.statusText,
+                    { color: getStatusColor(selectedAppointment.status) }
+                  ]}>
+                    {getStatusText(selectedAppointment.status)}
+                  </Text>
+                </View>
+
+                {selectedAppointment.notes && (
+                  <View style={styles.detailRow}>
+                    <Ionicons name="document-text" size={20} color="#0F4C4C" />
+                    <Text style={styles.detailLabel}>Notlar:</Text>
+                    <Text style={styles.detailValue}>{selectedAppointment.notes}</Text>
+                  </View>
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -494,6 +642,25 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginBottom: 6,
   },
+  servicesContainer: {
+    marginBottom: 6,
+  },
+  servicesTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  serviceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  serviceText: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginLeft: 6,
+  },
   phoneContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -589,5 +756,77 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#6b7280',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    width: '90%',
+    maxHeight: '80%',
+    marginHorizontal: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0F4C4C',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalBody: {
+    padding: 16,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  servicesDetailRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 8,
+  },
+  selectedServicesList: {
+    marginLeft: 32,
+    gap: 4,
+  },
+  serviceDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  serviceDetailText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    minWidth: 80,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#6b7280',
+    flex: 1,
+  },
+  statusText: {
+    fontWeight: '600',
   },
 });

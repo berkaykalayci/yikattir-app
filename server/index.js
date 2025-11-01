@@ -13,6 +13,8 @@ const favoritesRouter = require('./routes/favorites');
 const servicesRouter = require('./routes/services');
 const reviewsRouter = require('./routes/reviews');
 const addressesRouter = require('./routes/addresses');
+const paymentMethodsRouter = require('./routes/paymentMethods');
+const blockedSlotsRouter = require('./routes/blockedSlots');
 const { router: authRouter } = require('./routes/auth');
 
 const app = express();
@@ -43,6 +45,8 @@ app.use('/favorites', favoritesRouter);
 app.use('/services', servicesRouter);
 app.use('/reviews', reviewsRouter);
 app.use('/addresses', addressesRouter);
+app.use('/payment-methods', paymentMethodsRouter);
+app.use('/blocked-slots', blockedSlotsRouter);
 console.log('Tüm routes yüklendi');
 
 // Socket.IO

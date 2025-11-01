@@ -29,11 +29,6 @@ export default function BusinessTabs() {
         tabBarStyle: {
           height: 56 + Math.max(insets.bottom - 8, 0),
           paddingBottom: Math.max(insets.bottom - 8, 0),
-          position: 'absolute',
-          left: 12,
-          right: 12,
-          bottom: 0,
-          borderRadius: 24,
           backgroundColor: '#0F4C4C',
           borderTopWidth: 0,
           elevation: 8,

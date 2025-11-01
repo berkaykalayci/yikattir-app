@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function BusinessProfileScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -229,6 +229,11 @@ export default function BusinessProfileScreen({ navigation }) {
           <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('BusinessReviews')}>
             <Ionicons name="star-outline" size={24} color="#0F4C4C" />
             <Text style={styles.menuText}>Değerlendirmelerim</Text>
+            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('BlockedSlots')}>
+            <Ionicons name="time-outline" size={24} color="#0F4C4C" />
+            <Text style={styles.menuText}>Saat Engelleme</Text>
             <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
           </TouchableOpacity>
           <TouchableOpacity 

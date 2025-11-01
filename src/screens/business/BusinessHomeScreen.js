@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import io from 'socket.io-client';
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function BusinessHomeScreen({ navigation }) {
   console.log('=== BusinessHomeScreen MOUNT OLDU ===');
@@ -303,6 +303,7 @@ export default function BusinessHomeScreen({ navigation }) {
           id: apt.id,
           customerName: apt.customer?.name || 'Müşteri',
           service: apt.service?.name || 'Hizmet',
+          selectedServices: apt.selectedServices || null,
           time: apt.time,
           date: apt.date,
         }))
@@ -321,6 +322,7 @@ export default function BusinessHomeScreen({ navigation }) {
           id: apt.id,
           customerName: apt.customer?.name || 'Müşteri',
           service: apt.service?.name || 'Hizmet',
+          selectedServices: apt.selectedServices || null,
           time: apt.time,
           date: apt.date,
           phone: apt.customer?.phone || 'Telefon yok',
@@ -399,7 +401,31 @@ export default function BusinessHomeScreen({ navigation }) {
                     </View>
                   </View>
                   <Text numberOfLines={1} style={styles.upcomingCustomerCompact}>{appointment.customerName}</Text>
-                  <Text numberOfLines={1} style={styles.upcomingServiceCompact}>{appointment.service}</Text>
+                  {(() => {
+                    // selectedServices JSON string olarak gelebilir, parse et
+                    let services = appointment.selectedServices;
+                    if (typeof services === 'string') {
+                      try {
+                        services = JSON.parse(services);
+                      } catch (e) {
+                        services = null;
+                      }
+                    }
+                    
+                    if (services && Array.isArray(services) && services.length > 0) {
+                      return (
+                        <Text numberOfLines={1} style={styles.upcomingServiceCompact}>
+                          {services.length} hizmet seçildi
+                        </Text>
+                      );
+                    } else {
+                      return (
+                        <Text numberOfLines={1} style={styles.upcomingServiceCompact}>
+                          {appointment.service}
+                        </Text>
+                      );
+                    }
+                  })()}
                 </View>
               ))}
             </ScrollView>
@@ -458,7 +484,31 @@ export default function BusinessHomeScreen({ navigation }) {
                   </View>
                   <View style={styles.pendingDetails}>
                     <Text style={styles.pendingCustomer}>{appointment.customerName}</Text>
-                    <Text style={styles.pendingService}>{appointment.service}</Text>
+                    {(() => {
+                      // selectedServices JSON string olarak gelebilir, parse et
+                      let services = appointment.selectedServices;
+                      if (typeof services === 'string') {
+                        try {
+                          services = JSON.parse(services);
+                        } catch (e) {
+                          services = null;
+                        }
+                      }
+                      
+                      if (services && Array.isArray(services) && services.length > 0) {
+                        return (
+                          <Text style={styles.pendingService}>
+                            {services.length} hizmet seçildi
+                          </Text>
+                        );
+                      } else {
+                        return (
+                          <Text style={styles.pendingService}>
+                            {appointment.service}
+                          </Text>
+                        );
+                      }
+                    })()}
                     <Text style={styles.pendingPhone}>{appointment.phone}</Text>
                   </View>
                   <View style={styles.pendingActions}>

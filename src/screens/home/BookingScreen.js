@@ -7,7 +7,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 
-const API_BASE_URL = 'http://192.168.1.31:3001';
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function BookingScreen({ navigation, route }) {
   const { item: business } = route.params || {};
@@ -15,7 +15,7 @@ export default function BookingScreen({ navigation, route }) {
   const [showDate, setShowDate] = useState(false);
   const [showTime, setShowTime] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState(new Date());
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -35,10 +35,38 @@ export default function BookingScreen({ navigation, route }) {
     });
   };
 
-  const formatTime = (date) => {
-    return date.toLocaleTimeString('tr-TR', {
-      hour: '2-digit',
-      minute: '2-digit'
+  // Tarih sınırları
+  const today = new Date();
+  const maxDate = new Date();
+  maxDate.setDate(today.getDate() + 30); // Maksimum 30 gün sonrası
+
+  // Tarih seçimi için hazır tarihler
+  const getAvailableDates = () => {
+    const dates = [];
+    for (let i = 0; i < 14; i++) { // Sadece 2 hafta göster
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
+  const availableDates = getAvailableDates();
+
+  // Toplam fiyat hesaplama
+  const calculateTotalPrice = () => {
+    return selectedServices.reduce((total, service) => total + service.price, 0);
+  };
+
+  // Hizmet seçimi toggle fonksiyonu
+  const toggleService = (service) => {
+    setSelectedServices(prev => {
+      const isSelected = prev.some(s => s.id === service.id);
+      if (isSelected) {
+        return prev.filter(s => s.id !== service.id);
+      } else {
+        return [...prev, service];
+      }
     });
   };
 
@@ -110,8 +138,8 @@ export default function BookingScreen({ navigation, route }) {
   };
 
   const handleConfirm = async () => {
-    if (!selectedService) {
-      Alert.alert('Uyarı', 'Lütfen bir hizmet seçin');
+    if (selectedServices.length === 0) {
+      Alert.alert('Uyarı', 'Lütfen en az bir hizmet seçin');
       return;
     }
     if (!selectedSlot) {
@@ -131,23 +159,28 @@ export default function BookingScreen({ navigation, route }) {
       const turkishDate = new Date(selectedDate.getTime() + (3 * 60 * 60 * 1000)); // UTC+3
       const dateString = turkishDate.toISOString().split('T')[0];
       
+      // İlk hizmeti ana hizmet olarak kullan (backend uyumluluğu için)
+      const primaryService = selectedServices[0];
+      
       const appointmentData = {
         businessId: business.id,
         customerId: user.id,
-        serviceId: selectedService.id,
+        serviceId: primaryService.id,
         date: dateString, // Türkiye saatine göre tarih
         time: selectedSlot,
         vehicleType: 'SEDAN', // Geçici
         plate: '34 ABC 123', // Geçici
         notes: 'Müşteri notu',
-        totalPrice: selectedService.price // Hizmet fiyatını ekle
+        totalPrice: calculateTotalPrice(), // Toplam fiyat
+        selectedServices: selectedServices // Seçilen tüm hizmetler
       };
 
       const response = await axios.post(`${API_BASE_URL}/appointments`, appointmentData);
       
       setShowModal(false);
       navigation.navigate('BookingConfirm', { 
-        service: selectedService,
+        service: primaryService,
+        services: selectedServices,
         date: selectedDate,
         time: selectedTime,
         appointment: response.data
@@ -178,7 +211,9 @@ export default function BookingScreen({ navigation, route }) {
           onPress={() => setShowServiceModal(true)}
         >
           <Text style={styles.inputText}>
-            {selectedService ? selectedService.name : 'Hizmet Seçin'}
+            {selectedServices.length > 0 
+              ? `${selectedServices.length} hizmet seçildi` 
+              : 'Hizmet Seçin'}
           </Text>
           <Ionicons name="chevron-down" size={20} color="#6b7280" />
         </TouchableOpacity>
@@ -186,17 +221,71 @@ export default function BookingScreen({ navigation, route }) {
         <Text style={styles.label}>Tarih</Text>
         <TouchableOpacity style={styles.input} onPress={() => setShowDate(true)}>
           <Text style={styles.inputText}>{formatDate(selectedDate)}</Text>
+          <Ionicons name="calendar-outline" size={20} color="#6b7280" />
         </TouchableOpacity>
+        
         {showDate && (
-          <DateTimePicker 
-            value={selectedDate} 
-            mode="date" 
-            display="spinner" 
-            onChange={(_, d) => { 
-              setShowDate(false); 
-              if(d) setSelectedDate(d);
-            }} 
-          />
+          <View style={styles.datePickerContainer}>
+            <View style={styles.datePickerHeader}>
+              <Text style={styles.datePickerTitle}>Tarih Seçin</Text>
+              <TouchableOpacity onPress={() => setShowDate(false)}>
+                <Ionicons name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.dateList} showsVerticalScrollIndicator={false}>
+              {availableDates.map((date, index) => {
+                const isToday = date.toDateString() === today.toDateString();
+                const isSelected = date.toDateString() === selectedDate.toDateString();
+                const dayName = date.toLocaleDateString('tr-TR', { weekday: 'short' });
+                const dayNumber = date.getDate();
+                const monthName = date.toLocaleDateString('tr-TR', { month: 'short' });
+                
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.dateItem,
+                      isSelected && styles.dateItemSelected,
+                      isToday && styles.dateItemToday
+                    ]}
+                    onPress={() => {
+                      setSelectedDate(date);
+                      setShowDate(false);
+                      loadSlots(date);
+                    }}
+                  >
+                    <View style={styles.dateItemContent}>
+                      <Text style={[
+                        styles.dayName,
+                        isSelected && styles.dayNameSelected,
+                        isToday && styles.dayNameToday
+                      ]}>
+                        {isToday ? 'Bugün' : dayName}
+                      </Text>
+                      <Text style={[
+                        styles.dayNumber,
+                        isSelected && styles.dayNumberSelected,
+                        isToday && styles.dayNumberToday
+                      ]}>
+                        {dayNumber}
+                      </Text>
+                      <Text style={[
+                        styles.monthName,
+                        isSelected && styles.monthNameSelected,
+                        isToday && styles.monthNameToday
+                      ]}>
+                        {monthName}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={20} color="#0F4C4C" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         )}
 
         <Text style={styles.label}>Saat</Text>
@@ -225,16 +314,16 @@ export default function BookingScreen({ navigation, route }) {
         </View>
 
         <TouchableOpacity 
-          style={[styles.cta, !selectedService && styles.ctaDisabled]} 
+          style={[styles.cta, selectedServices.length === 0 && styles.ctaDisabled]} 
           onPress={() => setShowModal(true)}
-          disabled={!selectedService}
+          disabled={selectedServices.length === 0}
         >
           <Text style={styles.ctaText}>Randevu Onay</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.totalRow}>
         <Text style={styles.totalLabel}>Toplam Tutar:</Text>
-        <Text style={styles.totalValue}>{selectedService ? selectedService.price : 0} ₺</Text>
+        <Text style={styles.totalValue}>{calculateTotalPrice()} ₺</Text>
       </View>
       </ScrollView>
 
@@ -244,33 +333,41 @@ export default function BookingScreen({ navigation, route }) {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Hizmet Seçin</Text>
-              <TouchableOpacity onPress={() => setShowServiceModal(false)}>
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
+              <View style={styles.modalHeaderButtons}>
+                <Text style={styles.selectedCount}>
+                  {selectedServices.length} hizmet seçildi
+                </Text>
+                <TouchableOpacity 
+                  style={styles.doneButton}
+                  onPress={() => setShowServiceModal(false)}
+                >
+                  <Text style={styles.doneButtonText}>Tamam</Text>
+                </TouchableOpacity>
+              </View>
             </View>
             <ScrollView style={styles.servicesList}>
-              {services.map((service) => (
-                <TouchableOpacity
-                  key={service.id}
-                  style={[
-                    styles.serviceItem,
-                    selectedService?.id === service.id && styles.serviceItemSelected
-                  ]}
-                  onPress={() => {
-                    setSelectedService(service);
-                    setShowServiceModal(false);
-                  }}
-                >
-                  <View style={styles.serviceInfo}>
-                    <Text style={styles.serviceName}>{service.name}</Text>
-                    <Text style={styles.servicePrice}>{service.price} ₺</Text>
-                    <Text style={styles.serviceDuration}>{service.durationMin} dakika</Text>
-                  </View>
-                  {selectedService?.id === service.id && (
-                    <Ionicons name="checkmark-circle" size={24} color="#0F4C4C" />
-                  )}
-                </TouchableOpacity>
-              ))}
+              {services.map((service) => {
+                const isSelected = selectedServices.some(s => s.id === service.id);
+                return (
+                  <TouchableOpacity
+                    key={service.id}
+                    style={[
+                      styles.serviceItem,
+                      isSelected && styles.serviceItemSelected
+                    ]}
+                    onPress={() => toggleService(service)}
+                  >
+                    <View style={styles.serviceInfo}>
+                      <Text style={styles.serviceName}>{service.name}</Text>
+                      <Text style={styles.servicePrice}>{service.price} ₺</Text>
+                      <Text style={styles.serviceDuration}>{service.durationMin} dakika</Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={24} color="#0F4C4C" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           </View>
         </View>
@@ -287,10 +384,16 @@ export default function BookingScreen({ navigation, route }) {
             </View>
             
             <View style={styles.confirmationDetails}>
-              <View style={styles.detailRow}>
+              <View style={styles.servicesDetailRow}>
                 <Ionicons name="car-outline" size={20} color="#0F4C4C" />
-                <Text style={styles.detailLabel}>Hizmet:</Text>
-                <Text style={styles.detailValue}>{selectedService?.name || 'Hizmet seçilmedi'}</Text>
+                <Text style={styles.detailLabel}>Hizmetler:</Text>
+                <View style={styles.selectedServicesList}>
+                  {selectedServices.map((service, index) => (
+                    <Text key={service.id} style={styles.serviceDetailItem}>
+                      {index + 1}. {service.name} - {service.price} ₺
+                    </Text>
+                  ))}
+                </View>
               </View>
               
               <View style={styles.detailRow}>
@@ -307,8 +410,8 @@ export default function BookingScreen({ navigation, route }) {
               
               <View style={styles.detailRow}>
                 <Ionicons name="card-outline" size={20} color="#0F4C4C" />
-                <Text style={styles.detailLabel}>Tutar:</Text>
-                <Text style={styles.detailValue}>{selectedService?.price || 0} ₺</Text>
+                <Text style={styles.detailLabel}>Toplam Tutar:</Text>
+                <Text style={styles.detailValue}>{calculateTotalPrice()} ₺</Text>
               </View>
             </View>
             
@@ -462,6 +565,131 @@ const styles = StyleSheet.create({
   serviceDuration: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  modalHeaderButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  selectedCount: {
+    fontSize: 14,
+    color: '#0F4C4C',
+    fontWeight: '600',
+  },
+  doneButton: {
+    backgroundColor: '#0F4C4C',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  doneButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  datePickerContainer: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    maxHeight: 300,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  datePickerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0F4C4C',
+  },
+  dateList: {
+    maxHeight: 200,
+  },
+  dateItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  dateItemSelected: {
+    backgroundColor: '#f0f9ff',
+  },
+  dateItemToday: {
+    backgroundColor: '#fef3c7',
+  },
+  dateItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dayName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+    minWidth: 50,
+  },
+  dayNameSelected: {
+    color: '#0F4C4C',
+    fontWeight: '600',
+  },
+  dayNameToday: {
+    color: '#d97706',
+    fontWeight: '600',
+  },
+  dayNumber: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  dayNumberSelected: {
+    color: '#0F4C4C',
+  },
+  dayNumberToday: {
+    color: '#d97706',
+  },
+  monthName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+    minWidth: 40,
+  },
+  monthNameSelected: {
+    color: '#0F4C4C',
+    fontWeight: '600',
+  },
+  monthNameToday: {
+    color: '#d97706',
+    fontWeight: '600',
+  },
+  servicesDetailRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  selectedServicesList: {
+    marginTop: 8,
+    marginLeft: 28, // Icon genişliği kadar boşluk
+  },
+  serviceDetailItem: {
+    fontSize: 14,
+    color: '#374151',
+    marginBottom: 4,
+    paddingLeft: 8,
   },
   confirmButtonDisabled: {
     opacity: 0.5,

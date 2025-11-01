@@ -23,6 +23,7 @@ model User {
   notifications  Notification[]
   addresses      Address[]
   paymentMethods PaymentMethod[]
+  cards          Card[]         @relation("CustomerCards")
   favorites      Favorite[]
   pushToken      PushToken?
 }
@@ -31,6 +32,7 @@ model Business {
   workingHours WorkingHour[]
   reviews      Review[]
   favorites    Favorite[]
+  blockedSlots BlockedSlot[]
   id           String        @id @default(cuid())
   ownerId      String
   owner        User          @relation(fields: [ownerId], references: [id])
@@ -69,23 +71,24 @@ model Service {
 }
 
 model Appointment {
-  id          String    @id @default(cuid())
-  businessId  String
-  business    Business  @relation("BusinessAppointments", fields: [businessId], references: [id])
-  customerId  String
-  customer    User      @relation("CustomerAppointments", fields: [customerId], references: [id])
-  serviceId   String
-  service     Service   @relation(fields: [serviceId], references: [id])
-  date        DateTime
-  time        String
-  vehicleType String
-  plate       String
-  status      String    @default("PENDING")
-  notes       String?
-  totalPrice  Int
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  reviews     Review[]
+  id              String    @id @default(cuid())
+  businessId      String
+  business        Business  @relation("BusinessAppointments", fields: [businessId], references: [id])
+  customerId      String
+  customer        User      @relation("CustomerAppointments", fields: [customerId], references: [id])
+  serviceId       String
+  service         Service   @relation(fields: [serviceId], references: [id])
+  selectedServices Json?    // Çoklu hizmet seçimi için JSON array
+  date            DateTime
+  time            String
+  vehicleType     String
+  plate           String
+  status          String    @default("PENDING")
+  notes           String?
+  totalPrice      Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  reviews         Review[]
 }
 
 model WorkingHour {
@@ -147,6 +150,34 @@ model PaymentMethod {
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Card {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   User     @relation("CustomerCards", fields: [customerId], references: [id])
+  cardNumber String
+  lastFour   String
+  expiryDate String
+  cvv        String
+  cardHolder String
+  cardType   String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model BlockedSlot {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  date       DateTime
+  time       String
+  reason     String?  // "maintenance", "break", "personal", etc.
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([businessId, date, time])
 }
 
 model Favorite {

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../contexts/AuthContext';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://192.168.1.20:3001';
 
 export default function AddCardScreen({ navigation }) {
   const [form, setForm] = useState({
@@ -11,7 +15,9 @@ export default function AddCardScreen({ navigation }) {
     cardHolder: '',
     isDefault: false
   });
+  const [saving, setSaving] = useState(false);
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
 
   const updateField = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -55,12 +61,30 @@ export default function AddCardScreen({ navigation }) {
     return true;
   };
 
-  const handleSave = () => {
-    if (validateForm()) {
-      // Burada API çağrısı yapılabilir
+  const handleSave = async () => {
+    if (!validateForm()) return;
+    
+    try {
+      setSaving(true);
+      
+      await axios.post(`${API_BASE_URL}/payment-methods/customer/${user.id}`, {
+        cardNumber: form.cardNumber,
+        expiryDate: form.expiryDate,
+        cvv: form.cvv,
+        cardHolder: form.cardHolder,
+        isDefault: form.isDefault
+      }, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
+      
       Alert.alert('Başarılı', 'Kart başarıyla eklendi', [
         { text: 'Tamam', onPress: () => navigation.goBack() }
       ]);
+    } catch (error) {
+      console.error('Kart eklenirken hata:', error);
+      Alert.alert('Hata', error.response?.data?.error || 'Kart eklenemedi');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -85,6 +109,9 @@ export default function AddCardScreen({ navigation }) {
         keyboardType={keyboardType}
         maxLength={maxLength}
         secureTextEntry={field === 'cvv'}
+        autoCapitalize={field === 'cardHolder' ? 'words' : 'none'}
+        autoCorrect={field === 'cardHolder'}
+        textContentType={field === 'cardHolder' ? 'name' : 'none'}
       />
     </View>
   );
@@ -102,7 +129,16 @@ export default function AddCardScreen({ navigation }) {
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}
+        style={{ flex: 1, backgroundColor: '#f9fafb' }}
+      >
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 16) }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.cardPreview}>
           <View style={styles.cardHeader}>
             <Ionicons name="card" size={32} color="white" />
@@ -125,7 +161,7 @@ export default function AddCardScreen({ navigation }) {
           {renderField('Kart Numarası', 'cardNumber', '1234 5678 9012 3456', 'numeric', 19)}
           {renderField('Son Kullanma Tarihi', 'expiryDate', 'MM/YY', 'numeric', 5)}
           {renderField('CVV', 'cvv', '123', 'numeric', 3)}
-          {renderField('Kart Sahibi', 'cardHolder', 'Ad Soyad')}
+          {renderField('Kart Sahibi', 'cardHolder', 'Ad Soyad', 'default', 40)}
           
           <TouchableOpacity 
             style={styles.checkboxContainer}
@@ -149,10 +185,11 @@ export default function AddCardScreen({ navigation }) {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Kartı Kaydet</Text>
+        <TouchableOpacity style={[styles.saveButton, saving && styles.saveButtonDisabled]} onPress={handleSave} disabled={saving}>
+          <Text style={styles.saveButtonText}>{saving ? 'Kaydediliyor...' : 'Kartı Kaydet'}</Text>
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -318,5 +355,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#9ca3af',
   },
 });

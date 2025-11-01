@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,7 +36,11 @@ export default function BusinessLoginScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="white" />
@@ -45,32 +49,65 @@ export default function BusinessLoginScreen({ navigation }) {
         <View style={styles.placeholder} />
       </View>
       
-      <View style={styles.card}>
-        <TextInput placeholder="E-Posta" style={styles.input} value={email} onChangeText={setEmail} />
-        <TextInput placeholder="Şifre" style={styles.input} secureTextEntry value={password} onChangeText={setPassword} />
-        <TouchableOpacity 
-          style={[styles.btn, loading && styles.btnDisabled]} 
-          onPress={handleBusinessLogin}
-          disabled={loading}
-        >
-          <Text style={styles.btnText}>{loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.hint}>
-          İşletme hesabın yok mu?{' '}
-          <Text style={styles.link} onPress={() => navigation.navigate('BusinessRegister')}>
-            Kayıt ol !
+      <View style={styles.content}>
+        <View style={styles.welcomeSection}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="business" size={40} color="#059669" />
+          </View>
+          <Text style={styles.welcomeTitle}>İşletme Paneli</Text>
+          <Text style={styles.welcomeSubtitle}>İşletme hesabınızla giriş yapın</Text>
+        </View>
+        
+        <View style={styles.card}>
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+            <TextInput 
+              placeholder="E-Posta" 
+              style={styles.input} 
+              value={email} 
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+            <TextInput 
+              placeholder="Şifre" 
+              style={styles.input} 
+              secureTextEntry 
+              value={password} 
+              onChangeText={setPassword} 
+            />
+          </View>
+          <TouchableOpacity 
+            style={[styles.btn, loading && styles.btnDisabled]} 
+            onPress={handleBusinessLogin}
+            disabled={loading}
+          >
+            <Text style={styles.btnText}>{loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.hint}>
+            İşletme hesabın yok mu?{' '}
+            <Text style={styles.link} onPress={() => navigation.navigate('BusinessRegister')}>
+              Kayıt ol !
+            </Text>
           </Text>
-        </Text>
-        <TouchableOpacity style={styles.customerLink} onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.customerLinkText}>Müşteri Girişi</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.customerLink} onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.customerLinkText}>Müşteri Girişi</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+      
+      <View style={styles.brandContainer}>
+        <Text style={styles.brandText}>YIKATTIR</Text>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F4C4C', alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: '#0F4C4C' },
   header: { 
     position: 'absolute',
     top: 0,
@@ -81,7 +118,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     paddingHorizontal: 16, 
     paddingTop: 16,
-    paddingBottom: 16
+    paddingBottom: 16,
+    zIndex: 1,
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
   },
   backBtn: { 
     width: 40, 
@@ -93,11 +137,73 @@ const styles = StyleSheet.create({
   },
   title: { color: 'white', fontSize: 18, fontWeight: '700' },
   placeholder: { width: 40 },
-  card: { width: '86%', backgroundColor: '#e3e3e3', padding: 20, borderRadius: 20, gap: 12 },
-  input: { backgroundColor: 'white', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
-  btn: { backgroundColor: 'white', paddingVertical: 12, borderRadius: 24, alignItems: 'center', marginTop: 6 },
-  btnDisabled: { opacity: 0.6 },
-  btnText: { color: '#0F4C4C', fontWeight: '700' },
+  welcomeSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(5, 150, 105, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  welcomeTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 8,
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+  },
+  card: { 
+    width: '90%', 
+    backgroundColor: 'white', 
+    padding: 24, 
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: { 
+    flex: 1,
+    fontSize: 16, 
+    paddingVertical: 16,
+    color: '#374151',
+  },
+  btn: { 
+    backgroundColor: '#059669', 
+    paddingVertical: 16, 
+    borderRadius: 12, 
+    alignItems: 'center', 
+    marginBottom: 16,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  btnText: { color: 'white', fontWeight: '600', fontSize: 16 },
   hint: { textAlign: 'center', marginTop: 6, color: '#2b2b2b' },
   link: { color: '#0F4C4C', fontWeight: '700' },
   customerLink: { 
@@ -110,5 +216,21 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     fontWeight: '600',
     textDecorationLine: 'underline'
+  },
+  brandContainer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  brandText: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: 'rgba(255,255,255,0.1)',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+    letterSpacing: 4,
   },
 });
