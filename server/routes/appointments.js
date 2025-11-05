@@ -15,18 +15,52 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Gerekli alanlar eksik' });
     }
 
-    // Kapasite kontrolü: aynı gün, aynı saat için mevcut doluluk
+    // İşletme kontrolü
     const business = await prisma.business.findUnique({ where: { id: businessId }, select: { capacity: true } });
     if (!business) {
       return res.status(404).json({ error: 'İşletme bulunamadı' });
     }
-    const startDate = new Date(date);
-    const endDate = new Date(date);
-    endDate.setDate(endDate.getDate() + 1);
+
+    // Aynı gün içinde aynı işletmeden randevu kontrolü
+    // Tarihi normalize et: YYYY-MM-DD formatından UTC'de gün başlangıcı ve sonunu hesapla
+    const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    
+    // UTC'de gün başlangıcı ve sonu (timezone sorunlarını önlemek için)
+    const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+
+    console.log('Randevu kontrolü (auth):', {
+      customerId,
+      businessId,
+      dateStr,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    });
+
+    const existingAppointment = await prisma.appointment.findFirst({
+      where: {
+        businessId,
+        customerId,
+        date: { gte: startDate, lte: endDate },
+        status: { in: ['PENDING', 'CONFIRMED'] }
+      }
+    });
+
+    console.log('Mevcut randevu kontrolü sonucu (auth):', existingAppointment ? `VAR - ID: ${existingAppointment.id}` : 'YOK');
+
+    if (existingAppointment) {
+      console.log('Aynı gün randevu engellendi (auth):', existingAppointment.id);
+      return res.status(409).json({ 
+        error: 'Bu işletmeden bugün zaten bir randevunuz bulunmaktadır. Gün içinde aynı işletmeden sadece bir randevu alabilirsiniz.' 
+      });
+    }
+
+    // Kapasite kontrolü: aynı gün, aynı saat için mevcut doluluk
     const existingCount = await prisma.appointment.count({
       where: {
         businessId,
-        date: { gte: startDate, lt: endDate },
+        date: { gte: startDate, lte: endDate },
         time,
         status: { in: ['PENDING', 'CONFIRMED'] }
       }
@@ -156,7 +190,7 @@ router.get('/business/:businessId', async (req, res) => {
   }
 });
 
-// Yeni randevu oluştur
+// Yeni randevu oluştur (public endpoint - authenticateToken yok)
 router.post('/', async (req, res) => {
   const { businessId, customerId, serviceId, date, time, vehicleType, plate, notes } = req.body;
 
@@ -165,18 +199,52 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    // Kapasite kontrolü (public endpoint için de)
+    // İşletme kontrolü
     const business = await prisma.business.findUnique({ where: { id: businessId }, select: { capacity: true } });
     if (!business) {
       return res.status(404).json({ error: 'İşletme bulunamadı.' });
     }
-    const startDate = new Date(date);
-    const endDate = new Date(date);
-    endDate.setDate(endDate.getDate() + 1);
+
+    // Aynı gün içinde aynı işletmeden randevu kontrolü
+    // Tarihi normalize et: YYYY-MM-DD formatından UTC'de gün başlangıcı ve sonunu hesapla
+    const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    
+    // UTC'de gün başlangıcı ve sonu (timezone sorunlarını önlemek için)
+    const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+
+    console.log('Randevu kontrolü (public):', {
+      customerId,
+      businessId,
+      dateStr,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    });
+
+    const existingAppointment = await prisma.appointment.findFirst({
+      where: {
+        businessId,
+        customerId,
+        date: { gte: startDate, lte: endDate },
+        status: { in: ['PENDING', 'CONFIRMED'] }
+      }
+    });
+
+    console.log('Mevcut randevu kontrolü sonucu (public):', existingAppointment ? `VAR - ID: ${existingAppointment.id}` : 'YOK');
+
+    if (existingAppointment) {
+      console.log('Aynı gün randevu engellendi (public):', existingAppointment.id);
+      return res.status(409).json({ 
+        error: 'Bu işletmeden bugün zaten bir randevunuz bulunmaktadır. Gün içinde aynı işletmeden sadece bir randevu alabilirsiniz.' 
+      });
+    }
+
+    // Kapasite kontrolü: aynı gün, aynı saat için mevcut doluluk
     const existingCount = await prisma.appointment.count({
       where: {
         businessId,
-        date: { gte: startDate, lt: endDate },
+        date: { gte: startDate, lte: endDate },
         time,
         status: { in: ['PENDING', 'CONFIRMED'] }
       }

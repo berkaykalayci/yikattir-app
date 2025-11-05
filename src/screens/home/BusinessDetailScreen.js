@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView, Modal } from 'react-native';
-import appLogo from '../../../assets/logo-alt.png';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -213,23 +212,82 @@ export default function BusinessDetailScreen({ navigation, route }) {
   useEffect(() => {
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') return;
-        const cur = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        console.log('Mesafe hesaplama başladı, business:', {
+          id: business?.id,
+          name: business?.name,
+          lat: business?.lat,
+          lng: business?.lng,
+          latType: typeof business?.lat,
+          lngType: typeof business?.lng
+        });
+
+        // İşletme koordinatları yoksa mesafe hesaplamayı atla
+        const bizLat = business?.lat != null ? parseFloat(String(business.lat)) : null;
+        const bizLng = business?.lng != null ? parseFloat(String(business.lng)) : null;
+        
+        console.log('Parsed koordinatlar:', { bizLat, bizLng, isFiniteLat: isFinite(bizLat), isFiniteLng: isFinite(bizLng) });
+        
+        if (!isFinite(bizLat) || !isFinite(bizLng)) {
+          console.log('Koordinatlar geçersiz, mesafe hesaplanamıyor');
+          setDistanceKm(null);
+          return;
+        }
+
+        const perm = await Location.requestForegroundPermissionsAsync();
+        console.log('Konum izni durumu:', perm.status);
+        if (perm.status !== 'granted') {
+          console.log('Konum izni reddedildi');
+          setDistanceKm(null);
+          return;
+        }
+
+        // Önce son bilinen konumu dene (anında gelir)
+        let position = await Location.getLastKnownPositionAsync();
+        console.log('Son bilinen konum:', position ? 'bulundu' : 'bulunamadı');
+
+        if (!position) {
+          console.log('Mevcut konum alınıyor...');
+          // 4 sn timeout ile mevcut konumu dene
+          const getPos = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          position = await Promise.race([
+            getPos,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('loc-timeout')), 4000))
+          ]).catch((err) => {
+            console.log('Konum alınamadı:', err.message);
+            return null;
+          });
+        }
+
+        if (!position?.coords) {
+          console.log('Konum bilgisi alınamadı');
+          setDistanceKm(null);
+          return;
+        }
+
+        console.log('Kullanıcı konumu:', {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+
         const toRad = (x) => (x * Math.PI) / 180;
-        const R = 6371;
-        const a = { lat: cur.coords.latitude, lng: cur.coords.longitude };
-        const b = { lat: business.lat, lng: business.lng };
+        const R = 6371; // km
+        const a = { lat: position.coords.latitude, lng: position.coords.longitude };
+        const b = { lat: bizLat, lng: bizLng };
         const dLat = toRad(b.lat - a.lat);
         const dLon = toRad(b.lng - a.lng);
         const lat1 = toRad(a.lat);
         const lat2 = toRad(b.lat);
         const s = Math.sin(dLat/2)**2 + Math.sin(dLon/2)**2 * Math.cos(lat1) * Math.cos(lat2);
         const d = 2 * R * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
-        setDistanceKm(d);
-      } catch (e) {}
+        
+        console.log('Hesaplanan mesafe:', d, 'km');
+        setDistanceKm(Number.isFinite(d) ? d : null);
+      } catch (err) {
+        console.error('Mesafe hesaplama hatası:', err);
+        setDistanceKm(null);
+      }
     })();
-  }, [business]);
+  }, [business?.id, business?.lat, business?.lng]);
 
   return (
     <ScrollView 
@@ -255,11 +313,6 @@ export default function BusinessDetailScreen({ navigation, route }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
           <Ionicons name="car-outline" size={16} color={'#0F4C4C'} />
           <Text style={styles.distance}>{distanceKm != null ? distanceKm.toFixed(1) + ' Km' : 'Konum bilgisi yok'}</Text>
-        </View>
-        <View style={styles.centerLogoWrap}>
-          <View style={styles.logoCircle}>
-            <Image source={appLogo} style={styles.logoImage} resizeMode="cover" />
-          </View>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           {Array.from({ length: 5 }).map((_, i) => (
@@ -478,12 +531,8 @@ const styles = StyleSheet.create({
   headerBar: { backgroundColor: '#0F4C4C', paddingHorizontal: 16, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 36, paddingHorizontal: 0, marginBottom: 0 },
   iconBtn: { width: 36, height: 36, borderRadius: 18,  alignItems: 'center', justifyContent: 'center' },
-  topInfo: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 0, position: 'relative', backgroundColor: '#fff' },
-  centerLogoWrap: { position: 'absolute', left: '50%', transform: [{ translateX: -24 }], alignItems: 'center', justifyContent: 'center' },
+  topInfo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: 0, backgroundColor: '#fff' },
   distance: { color: '#0F4C4C', fontWeight: '700' },
-  logoCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  logoImage: { width: '100%', height: '100%' },
-  logoText: { color: '#6b7280', fontWeight: '700', fontSize: 12 },
   scoreText: { color: '#0F4C4C', fontWeight: '600', marginLeft: 2 },
   heroWrap: { height: 180, backgroundColor: '#e5e7eb', marginHorizontal: 16, marginTop: 6, borderRadius: 8, overflow: 'hidden' },
   heroImage: { width: '100%', height: '100%' },

@@ -187,7 +187,8 @@ export default function BookingScreen({ navigation, route }) {
       });
     } catch (error) {
       console.error('Randevu oluşturma hatası:', error);
-      Alert.alert('Hata', 'Randevu oluşturulamadı');
+      const errorMessage = error.response?.data?.error || 'Randevu oluşturulamadı';
+      Alert.alert('Hata', errorMessage);
     } finally {
       setLoading(false);
     }
