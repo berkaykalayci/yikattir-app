@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "kill-expo": "pkill -9 -f 'expo.*808' || true",
-    "start": "npm run kill-expo && sleep 2 && EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0 npx expo start --port 8081 --lan",
+    "start": "npm run kill-expo && sleep 2 && EXPO_NO_UPDATE_CHECK=1 EXPO_NO_GIT_STATUS=1 EXPO_UPDATES_ENABLED=false EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0 npx expo start --port 8081 --lan --clear",
     "start:tunnel": "npm run kill-expo && sleep 2 && npx expo start --port 8081 --tunnel",
     "start:clear": "npm run kill-expo && sleep 2 && npx expo start --port 8081 --lan --clear",
     "android": "npm run kill-expo && sleep 2 && npx expo start --android --port 8081 --clear",

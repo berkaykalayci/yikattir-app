@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, TextInput, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBusinesses } from '../../store/BusinessContext';
@@ -162,7 +162,17 @@ export default function SearchScreen({ navigation }) {
       style={styles.businessCard}
       onPress={() => navigation.navigate('HomeTab', { screen: 'Detail', params: { item } })}
     >
-      <View style={styles.businessPlaceholder} />
+      {item.imageUrl ? (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.businessImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.businessPlaceholder}>
+          <Ionicons name="image-outline" size={32} color="#9ca3af" />
+        </View>
+      )}
       <View style={styles.businessInfo}>
         <Text style={styles.businessName}>{item.name}</Text>
         <Text style={styles.businessLocation}>{item.district}, {item.city}</Text>
@@ -396,11 +406,18 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  businessImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+  },
   businessPlaceholder: {
     width: 80,
     height: 80,
     backgroundColor: '#e5e7eb',
     borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   businessInfo: {
     flex: 1,

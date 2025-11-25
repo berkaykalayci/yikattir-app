@@ -51,7 +51,25 @@ router.get('/', async (req, res) => {
       }
     });
 
-    res.json(businesses);
+    // Görsel URL'lerindeki eski IP adreslerini mevcut host IP'si ile değiştir
+    const currentHost = `${req.protocol}://${req.get('host')}`;
+    const businessesWithUpdatedUrls = businesses.map(business => {
+      if (business.imageUrl) {
+        business.imageUrl = business.imageUrl.replace(
+          /http:\/\/(192\.168\.1\.\d+|10\.0\.2\.2|localhost):3001/g,
+          currentHost
+        );
+      }
+      if (business.logoUrl) {
+        business.logoUrl = business.logoUrl.replace(
+          /http:\/\/(192\.168\.1\.\d+|10\.0\.2\.2|localhost):3001/g,
+          currentHost
+        );
+      }
+      return business;
+    });
+
+    res.json(businessesWithUpdatedUrls);
   } catch (error) {
     console.error('İşletmeler listelenirken hata:', error);
     res.status(500).json({ error: 'Sunucu hatası' });
@@ -95,6 +113,21 @@ router.get('/:id', async (req, res) => {
 
     if (!business) {
       return res.status(404).json({ error: 'İşletme bulunamadı' });
+    }
+
+    // Görsel URL'lerindeki eski IP adreslerini mevcut host IP'si ile değiştir
+    const currentHost = `${req.protocol}://${req.get('host')}`;
+    if (business.imageUrl) {
+      business.imageUrl = business.imageUrl.replace(
+        /http:\/\/(192\.168\.1\.\d+|10\.0\.2\.2|localhost):3001/g,
+        currentHost
+      );
+    }
+    if (business.logoUrl) {
+      business.logoUrl = business.logoUrl.replace(
+        /http:\/\/(192\.168\.1\.\d+|10\.0\.2\.2|localhost):3001/g,
+        currentHost
+      );
     }
 
     res.json(business);

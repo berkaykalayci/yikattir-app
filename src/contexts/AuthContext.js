@@ -16,7 +16,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Hemen false yap
 
   useEffect(() => {
     loadStoredAuth();
@@ -24,6 +24,9 @@ export const AuthProvider = ({ children }) => {
 
   const loadStoredAuth = async () => {
     try {
+      // Hemen loading'i false yap, hiçbir şey bekleme
+      setLoading(false);
+      
       const storedToken = await AsyncStorage.getItem('authToken');
       const storedUser = await AsyncStorage.getItem('user');
       
@@ -36,25 +39,23 @@ export const AuthProvider = ({ children }) => {
         // Token'ı axios header'ına ekle
         axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
         
-        // Token'ın geçerli olup olmadığını kontrol et
-        try {
-          const profileResponse = await Promise.race([
-            axios.get(`${API_BASE_URL}/auth/profile`),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-          ]);
-        } catch (error) {
-          // Token geçersizse veya timeout olursa temizle
+        // Token kontrolünü arka planda yap, uygulamanın açılmasını engelleme
+        Promise.race([
+          axios.get(`${API_BASE_URL}/auth/profile`, { timeout: 2000 }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+        ]).catch((error) => {
+          // Token geçersizse temizle (sessizce)
           console.log('Token kontrolü başarısız, çıkış yapılıyor:', error.message);
           setUser(null);
           setToken(null);
-          await AsyncStorage.removeItem('authToken');
-          await AsyncStorage.removeItem('user');
+          AsyncStorage.removeItem('authToken');
+          AsyncStorage.removeItem('user');
           delete axios.defaults.headers.common['Authorization'];
-        }
+        });
       }
     } catch (error) {
       console.error('Stored auth yükleme hatası:', error);
-    } finally {
+      // Hata durumunda da loading'i false yap
       setLoading(false);
     }
   };

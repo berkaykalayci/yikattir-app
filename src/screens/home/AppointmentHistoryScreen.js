@@ -81,10 +81,17 @@ export default function AppointmentHistoryScreen({ navigation }) {
   }, [appointments, filter]);
 
   const getStatusColor = (status) => {
-    switch (status) {
+    // Status'u normalize et (uppercase'e çevir)
+    const normalizedStatus = status ? String(status).toUpperCase().trim() : '';
+    
+    switch (normalizedStatus) {
+      case 'COMPLETED':
       case 'completed':
         return '#10b981';
+      case 'CANCELLED':
+      case 'CANCELED':
       case 'cancelled':
+      case 'canceled':
         return '#ef4444';
       default:
         return '#6b7280';
@@ -92,13 +99,22 @@ export default function AppointmentHistoryScreen({ navigation }) {
   };
 
   const getStatusText = (status) => {
-    switch (status) {
+    // Status'u normalize et (uppercase'e çevir)
+    const normalizedStatus = status ? String(status).toUpperCase().trim() : '';
+    
+    switch (normalizedStatus) {
+      case 'COMPLETED':
       case 'completed':
         return 'Tamamlandı';
+      case 'CANCELLED':
+      case 'CANCELED':
       case 'cancelled':
+      case 'canceled':
         return 'İptal Edildi';
       default:
-        return 'Bilinmiyor';
+        // Debug için
+        console.log('Bilinmeyen status:', status, 'normalized:', normalizedStatus);
+        return normalizedStatus || 'Bilinmiyor';
     }
   };
 

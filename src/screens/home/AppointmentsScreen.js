@@ -115,17 +115,23 @@ export default function AppointmentsScreen({ navigation }) {
   };
 
   const getStatusInfo = (status) => {
-    switch (status) {
+    // Status'u normalize et (uppercase'e çevir ve trim yap)
+    const normalizedStatus = status ? String(status).toUpperCase().trim() : '';
+    
+    switch (normalizedStatus) {
       case 'PENDING':
         return { text: 'Onay Bekliyor', color: '#f59e0b' };
       case 'CONFIRMED':
         return { text: 'Onaylandı', color: '#10b981' };
       case 'CANCELLED':
+      case 'CANCELED':
         return { text: 'İptal Edildi', color: '#ef4444' };
       case 'COMPLETED':
         return { text: 'Tamamlandı', color: '#6b7280' };
       default:
-        return { text: 'Bilinmiyor', color: '#6b7280' };
+        // Debug için console.log ekleyelim
+        console.log('Bilinmeyen status:', status, 'normalized:', normalizedStatus);
+        return { text: normalizedStatus || 'Bilinmiyor', color: '#6b7280' };
     }
   };
 
@@ -141,6 +147,10 @@ export default function AppointmentsScreen({ navigation }) {
   });
 
   const renderAppointment = ({ item }) => {
+    // Debug: Status değerini kontrol et
+    if (item.status) {
+      console.log('Appointment status:', item.status, 'type:', typeof item.status);
+    }
     const statusInfo = getStatusInfo(item.status);
     const appointmentDate = new Date(item.date);
     const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
@@ -150,7 +160,20 @@ export default function AppointmentsScreen({ navigation }) {
     });
 
     return (
-      <View style={styles.appointmentCard}>
+      <TouchableOpacity 
+        style={styles.appointmentCard}
+        onPress={() => {
+          // ProfileStack'e gitmek için parent navigation kullan
+          // AppointmentsScreen -> HomeTabs -> Profile (ProfileStack) -> AppointmentDetail
+          const homeTabsNavigation = navigation.getParent();
+          if (homeTabsNavigation) {
+            homeTabsNavigation.navigate('Profile', {
+              screen: 'AppointmentDetail',
+              params: { appointment: item }
+            });
+          }
+        }}
+      >
         <View style={styles.appointmentHeader}>
           <View style={styles.businessInfo}>
             <View style={styles.businessLogo}>
@@ -238,7 +261,7 @@ export default function AppointmentsScreen({ navigation }) {
             </>
           )}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 

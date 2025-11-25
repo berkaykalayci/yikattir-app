@@ -9,12 +9,18 @@ export default function AppointmentDetailScreen({ navigation, route }) {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'COMPLETED':
       case 'completed':
         return '#10b981';
+      case 'CANCELLED':
       case 'cancelled':
         return '#ef4444';
-      case 'upcoming':
+      case 'CONFIRMED':
+      case 'confirmed':
         return '#3b82f6';
+      case 'PENDING':
+      case 'pending':
+        return '#f59e0b';
       default:
         return '#6b7280';
     }
@@ -22,12 +28,18 @@ export default function AppointmentDetailScreen({ navigation, route }) {
 
   const getStatusText = (status) => {
     switch (status) {
+      case 'COMPLETED':
       case 'completed':
         return 'Tamamlandı';
+      case 'CANCELLED':
       case 'cancelled':
         return 'İptal Edildi';
-      case 'upcoming':
-        return 'Yaklaşan';
+      case 'CONFIRMED':
+      case 'confirmed':
+        return 'Onaylandı';
+      case 'PENDING':
+      case 'pending':
+        return 'Onay Bekliyor';
       default:
         return 'Bilinmiyor';
     }
@@ -76,8 +88,13 @@ export default function AppointmentDetailScreen({ navigation, route }) {
               <Ionicons name="business" size={32} color="#0F4C4C" />
             </View>
             <View style={styles.businessInfo}>
-              <Text style={styles.businessName}>{appointment?.businessName || 'Kuzenler OtoYıkama'}</Text>
-              <Text style={styles.businessLocation}>{appointment?.businessLocation || 'Paşakonak, Bandırma'}</Text>
+              <Text style={styles.businessName}>{appointment?.business?.name || appointment?.businessName || 'İşletme Adı'}</Text>
+              <Text style={styles.businessLocation}>
+                {appointment?.business?.address || 
+                 appointment?.business?.district + ', ' + appointment?.business?.city ||
+                 appointment?.businessLocation || 
+                 'Adres bilgisi yok'}
+              </Text>
             </View>
           </View>
           
@@ -117,8 +134,10 @@ export default function AppointmentDetailScreen({ navigation, route }) {
           <View style={styles.serviceItem}>
             <Ionicons name="car-outline" size={20} color="#0F4C4C" />
             <View style={styles.serviceInfo}>
-              <Text style={styles.serviceName}>{appointment?.service || 'Oto Yıkama + İç Temizlik'}</Text>
-              <Text style={styles.serviceDescription}>Standart oto yıkama ve iç temizlik hizmeti</Text>
+              <Text style={styles.serviceName}>{appointment?.service?.name || appointment?.service || 'Hizmet Adı'}</Text>
+              <Text style={styles.serviceDescription}>
+                {appointment?.service?.description || 'Hizmet açıklaması'}
+              </Text>
             </View>
           </View>
           <View style={styles.serviceItem}>
@@ -137,7 +156,13 @@ export default function AppointmentDetailScreen({ navigation, route }) {
               <Ionicons name="calendar-outline" size={20} color="#0F4C4C" />
               <View style={styles.dateTimeInfo}>
                 <Text style={styles.dateTimeLabel}>Tarih</Text>
-                <Text style={styles.dateTimeValue}>{appointment?.date || '15 Aralık 2024'}</Text>
+                <Text style={styles.dateTimeValue}>
+                  {appointment?.date ? new Date(appointment.date).toLocaleDateString('tr-TR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                  }) : 'Tarih bilgisi yok'}
+                </Text>
               </View>
             </View>
             <View style={styles.dateTimeItem}>
@@ -154,7 +179,7 @@ export default function AppointmentDetailScreen({ navigation, route }) {
           <Text style={styles.cardTitle}>Ödeme Bilgileri</Text>
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabel}>Hizmet Ücreti</Text>
-            <Text style={styles.paymentValue}>{appointment?.price || 450} ₺</Text>
+            <Text style={styles.paymentValue}>{appointment?.totalPrice || appointment?.price || 0} ₺</Text>
           </View>
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabel}>Ödeme Yöntemi</Text>
@@ -162,7 +187,7 @@ export default function AppointmentDetailScreen({ navigation, route }) {
           </View>
           <View style={[styles.paymentRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Toplam</Text>
-            <Text style={styles.totalValue}>{appointment?.price || 450} ₺</Text>
+            <Text style={styles.totalValue}>{appointment?.totalPrice || appointment?.price || 0} ₺</Text>
           </View>
         </View>
 

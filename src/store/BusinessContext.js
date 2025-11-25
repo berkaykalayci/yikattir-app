@@ -8,24 +8,32 @@ const BusinessContext = createContext(null);
 
 export function BusinessProvider({ children }) {
   const [businesses, setBusinesses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Hemen false yap
   const { user } = useAuth();
 
   useEffect(() => {
     loadBusinesses();
   }, []);
 
-  // Socket.IO: Review değişikliklerini dinle
+  // Socket.IO: Review değişikliklerini dinle (sadece user varsa)
   useEffect(() => {
-    const socket = io(API_BASE_URL, { transports: ['websocket'], forceNew: true });
+    if (!user) return; // User yoksa socket bağlantısı kurma
     
-    socket.on('connect', () => {
-      console.log('BusinessContext: Socket bağlandı');
-      // Kullanıcının şehrine join ol
-      const cityName = user?.city || 'izmir';
-      socket.emit('join:city', cityName);
-      console.log(`BusinessContext: City room'a join oldu: ${cityName}`);
-    });
+    let socket;
+    try {
+      socket = io(API_BASE_URL, { 
+        transports: ['websocket'], 
+        forceNew: true,
+        timeout: 5000,
+      });
+      
+      socket.on('connect', () => {
+        console.log('BusinessContext: Socket bağlandı');
+        // Kullanıcının şehrine join ol
+        const cityName = user?.city || 'izmir';
+        socket.emit('join:city', cityName);
+        console.log(`BusinessContext: City room'a join oldu: ${cityName}`);
+      });
 
     socket.on('reviews:changed', (payload) => {
       console.log('BusinessContext: Review değişikliği alındı:', payload);
@@ -47,8 +55,17 @@ export function BusinessProvider({ children }) {
       loadBusinesses();
     });
 
+      socket.on('error', (error) => {
+        console.error('BusinessContext: Socket hatası:', error);
+      });
+    } catch (error) {
+      console.error('BusinessContext: Socket bağlantı hatası:', error);
+    }
+
     return () => {
-      socket.disconnect();
+      if (socket) {
+        socket.disconnect();
+      }
     };
   }, [user?.city]);
 
