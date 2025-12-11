@@ -17,7 +17,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(false); // Hemen false yap
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadStoredAuth();
@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
 
   const loadStoredAuth = async () => {
     try {
-      setLoading(false);
+      setLoading(true);
       
       const storedToken = await AsyncStorage.getItem('authToken');
       const storedUser = await AsyncStorage.getItem('user');
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
       if (storedToken && storedUser) {
         setToken(storedToken);
         const userData = JSON.parse(storedUser);
-        userData.token = storedToken; // Token'ı user objesine ekle
+        userData.token = storedToken;
         setUser(userData);
         
         axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       logError('AuthContext', 'Stored auth yükleme hatası');
+    } finally {
       setLoading(false);
     }
   };
