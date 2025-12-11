@@ -66,10 +66,17 @@ export function BusinessProvider({ children }) {
   const loadBusinesses = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/businesses`, { timeout: 5000 });
+      const response = await axios.get(`${API_BASE_URL}/businesses`, { timeout: 10000 });
       setBusinesses(response.data || []);
     } catch (error) {
-      logError('BusinessContext', 'İşletmeler yüklenirken hata');
+      logError('BusinessContext', 'İşletmeler yüklenirken hata', error);
+      if (__DEV__) {
+        console.error('BusinessContext hata detayları:', {
+          url: `${API_BASE_URL}/businesses`,
+          error: error.response?.data || error.message,
+          status: error.response?.status,
+        });
+      }
       setBusinesses([]);
     } finally {
       setLoading(false);
