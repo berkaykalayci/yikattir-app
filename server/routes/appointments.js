@@ -194,8 +194,17 @@ router.get('/customer/:customerId', async (req, res) => {
 
     res.json(appointments);
   } catch (error) {
-    console.error('Randevuları getirme hatası:', error);
-    res.status(500).json({ error: 'Randevular getirilemedi.', details: error.message });
+    console.error('Randevuları getirme hatası:', {
+      customerId,
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      error: 'Randevular getirilemedi.', 
+      details: error.message,
+      customerId 
+    });
   }
 });
 

@@ -19,6 +19,14 @@ export function AppointmentsProvider({ children }) {
       const response = await axios.get(`${API_BASE_URL}/appointments/customer/${user.id}`, { timeout: 10000 });
       setAppointments(response.data || []);
     } catch (error) {
+      if (__DEV__) {
+        console.error('[AppointmentsContext] Randevular yüklenirken hata:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          url: `${API_BASE_URL}/appointments/customer/${user.id}`
+        });
+      }
       logError('AppointmentsContext', 'Randevular yüklenirken hata', error);
       setAppointments([]);
     } finally {

@@ -54,4 +54,5 @@ DROPLET_INFO.md
 FINAL_CHECK.md
 PRIVACY_POLICY_TEMPLATE.md
 PRODUCTION_DEPLOYMENT_GUIDE.md
-QUICK_DEPLOY.md
+QUICK_DEPLOY.mdserver/.env.production.backup
+server/.env.backup
