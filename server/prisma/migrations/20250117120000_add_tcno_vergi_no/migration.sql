@@ -1,4 +1,8 @@
--- AlterTable
+-- User tablosundan TC ve Vergi No alanlarını kaldır (eğer varsa)
+ALTER TABLE "User" DROP COLUMN IF EXISTS "tcNo";
+ALTER TABLE "User" DROP COLUMN IF EXISTS "vergiNo";
+
+-- Business tablosuna TC ve Vergi No ekle
 ALTER TABLE "Business" ADD COLUMN "tcNo" TEXT,
 ADD COLUMN "vergiNo" TEXT;
 
