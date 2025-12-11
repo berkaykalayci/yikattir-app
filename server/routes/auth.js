@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
 
     // TC Kimlik No kontrolü (varsa ve BUSINESS rolünde)
     if (tcNo && role === 'BUSINESS') {
-      const existingTCNo = await prisma.user.findUnique({ where: { tcNo } });
+      const existingTCNo = await prisma.business.findUnique({ where: { tcNo } });
       if (existingTCNo) {
         return res.status(400).json({ error: 'Bu T.C. Kimlik No zaten kullanılıyor.' });
       }
@@ -40,7 +40,7 @@ router.post('/register', async (req, res) => {
 
     // Vergi No kontrolü (varsa ve BUSINESS rolünde)
     if (vergiNo && role === 'BUSINESS') {
-      const existingVergiNo = await prisma.user.findUnique({ where: { vergiNo } });
+      const existingVergiNo = await prisma.business.findUnique({ where: { vergiNo } });
       if (existingVergiNo) {
         return res.status(400).json({ error: 'Bu Vergi No zaten kullanılıyor.' });
       }
@@ -58,8 +58,6 @@ router.post('/register', async (req, res) => {
         password: hashedPassword,
         city,
         district,
-        tcNo: tcNo || null,
-        vergiNo: vergiNo || null,
         role,
       },
     });
@@ -85,6 +83,8 @@ router.post('/register', async (req, res) => {
           address: address || (city && district ? `${district}, ${city}` : 'Adres bilgisi'),
           city: city || 'Şehir',
           district: district || 'İlçe',
+          tcNo: tcNo || null,
+          vergiNo: vergiNo || null,
           rating: 0,
           isOpen: true,
           capacity: 3,

@@ -1,10 +1,10 @@
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN "tcNo" TEXT,
+ALTER TABLE "Business" ADD COLUMN "tcNo" TEXT,
 ADD COLUMN "vergiNo" TEXT;
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_tcNo_key" ON "User"("tcNo");
+CREATE UNIQUE INDEX "Business_tcNo_key" ON "Business"("tcNo");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_vergiNo_key" ON "User"("vergiNo");
+CREATE UNIQUE INDEX "Business_vergiNo_key" ON "Business"("vergiNo");
 
