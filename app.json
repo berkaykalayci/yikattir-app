@@ -6,27 +6,34 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0F4C4C"
     },
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yikattir.app",
       "buildNumber": "1",
+      "usesAppleSignIn": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Yakınınızdaki oto yıkama işletmelerini bulmak için konum bilgisine ihtiyacımız var.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Yakınınızdaki oto yıkama işletmelerini bulmak için konum bilgisine ihtiyacımız var."
       }
     },
+
     "android": {
+      "package": "com.yikattir.app",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
+
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F4C4C"
       },
-      "package": "com.yikattir.app",
-      "versionCode": 1,
+
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -34,13 +41,17 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED"
       ],
+
       "edgeToEdgeEnabled": true
     },
+
     "web": {
       "favicon": "./assets/favicon.png"
     },
+
     "plugins": [
       "expo-font",
       [
@@ -48,18 +59,29 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Yakınınızdaki oto yıkama işletmelerini bulmak için konum bilgisine ihtiyacımız var."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0F4C4C",
+          "sounds": []
+        }
       ]
     ],
+
     "updates": {
       "enabled": false,
       "checkAutomatically": "NEVER",
       "fallbackToCacheTimeout": 0
     },
+
     "extra": {
       "eas": {
         "projectId": "cb1e0927-75f4-4ee9-b2be-3ceb2fcc90a7"
       }
     },
+
     "owner": "berkaykalayci"
   }
 }

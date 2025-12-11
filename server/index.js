@@ -15,6 +15,7 @@ const reviewsRouter = require('./routes/reviews');
 const addressesRouter = require('./routes/addresses');
 const paymentMethodsRouter = require('./routes/paymentMethods');
 const blockedSlotsRouter = require('./routes/blockedSlots');
+const pushTokensRouter = require('./routes/pushTokens');
 const { router: authRouter } = require('./routes/auth');
 
 const app = express();
@@ -47,7 +48,8 @@ app.use('/reviews', reviewsRouter);
 app.use('/addresses', addressesRouter);
 app.use('/payment-methods', paymentMethodsRouter);
 app.use('/blocked-slots', blockedSlotsRouter);
-console.log('Tüm routes yüklendi');
+app.use('/push-tokens', pushTokensRouter);
+console.log('Tüm routes yüklendi, push-tokens route aktif');
 
 // Socket.IO
 io.on('connection', (socket) => {

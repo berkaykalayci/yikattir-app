@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { sendPushNotification } = require('./pushNotificationService');
 
 /**
  * Randevu durumu değişikliklerinde bildirim oluşturur
@@ -38,6 +39,17 @@ async function createAppointmentStatusNotification({
     // Socket.IO ile gerçek zamanlı bildirim gönder
     if (io) {
       io.to(`customer:${customerId}`).emit('notification:new', notification);
+    }
+
+    // Push notification gönder
+    try {
+      await sendPushNotification(customerId, title, message, {
+        type: 'appointment',
+        appointmentId,
+        notificationId: notification.id,
+      });
+    } catch (error) {
+      console.error('Push notification gönderme hatası:', error);
     }
 
     console.log(`Bildirim oluşturuldu: ${title} - Müşteri: ${customerId}`);
@@ -146,6 +158,16 @@ async function createAppointmentReminderNotification({
 
     if (io) {
       io.to(`customer:${customerId}`).emit('notification:new', notification);
+    }
+
+    // Push notification gönder
+    try {
+      await sendPushNotification(customerId, notification.title, notification.message, {
+        type: 'appointment',
+        notificationId: notification.id,
+      });
+    } catch (error) {
+      console.error('Push notification gönderme hatası:', error);
     }
 
     return notification;
