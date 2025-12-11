@@ -79,7 +79,7 @@ router.get('/', async (req, res) => {
 // İşletme detaylarını getir (müşteri için)
 router.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+  const { id } = req.params;
     
     const business = await prisma.business.findUnique({
       where: { id },
@@ -232,7 +232,8 @@ router.get('/:businessId/available-slots', async (req, res) => {
     const interval = Math.max(5, parseInt(String(intervalMin || business.slotIntervalMin || 30), 10) || 30); // güvenlik için min 5 dk
 
     // Aynı gün için mevcut randevular (sadece saat alanı gerekli)
-    const targetDate = new Date(date);
+    // Tarihi UTC olarak parse et (timezone sorunlarını önlemek için)
+    const targetDate = new Date(date + 'T00:00:00.000Z');
     const nextDay = new Date(targetDate);
     nextDay.setDate(nextDay.getDate() + 1);
 

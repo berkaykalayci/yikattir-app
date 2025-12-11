@@ -56,3 +56,4 @@ PRIVACY_POLICY_TEMPLATE.md
 PRODUCTION_DEPLOYMENT_GUIDE.md
 QUICK_DEPLOY.mdserver/.env.production.backup
 server/.env.backup
+server/working-hours-export.csv

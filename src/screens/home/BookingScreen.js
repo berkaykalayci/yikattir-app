@@ -121,10 +121,29 @@ export default function BookingScreen({ navigation, route }) {
       setSelectedSlot(null);
       const dateParam = formatDateParam(selectedDate);
       const url = `${API_BASE_URL}/businesses/${business.id}/available-slots?date=${dateParam}`;
-      const resp = await axios.get(url);
-      setSlots(resp.data.slots || []);
+      
+      if (__DEV__) {
+        console.log('[BookingScreen] Slot yükleme:', { businessId: business.id, date: dateParam, url });
+      }
+      
+      const resp = await axios.get(url, { timeout: 10000 });
+      const slotsData = resp.data.slots || [];
+      
+      if (__DEV__) {
+        console.log('[BookingScreen] Slotlar alındı:', { count: slotsData.length, slots: slotsData.slice(0, 3) });
+      }
+      
+      setSlots(slotsData);
     } catch (error) {
-      logError('BookingScreen', 'Slotlar yüklenirken hata');
+      if (__DEV__) {
+        console.error('[BookingScreen] Slot yükleme hatası:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          url: `${API_BASE_URL}/businesses/${business.id}/available-slots?date=${formatDateParam(selectedDate)}`
+        });
+      }
+      logError('BookingScreen', 'Slotlar yüklenirken hata', error);
       Alert.alert('Hata', getErrorMessage(error) || 'Uygun saatler getirilemedi. Lütfen tekrar deneyin.');
       setSlots([]);
     } finally {
