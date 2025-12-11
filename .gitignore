@@ -44,3 +44,14 @@ server/.env
 
 # Uploaded images
 server/uploads/
+
+# Documentation files (deployment guides, checklists, etc.)
+DEPLOYMENT_CHECKLIST.md
+DIGITALOCEAN_DB_SETUP.md
+DOMAIN_SETUP_COMPLETE.md
+DROPLET_DEPLOYMENT_GUIDE.md
+DROPLET_INFO.md
+FINAL_CHECK.md
+PRIVACY_POLICY_TEMPLATE.md
+PRODUCTION_DEPLOYMENT_GUIDE.md
+QUICK_DEPLOY.md
