@@ -3,6 +3,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
 import API_BASE_URL from '../config/api';
+import { logError } from '../utils/errorMessages';
 
 const BusinessContext = createContext(null);
 
@@ -15,7 +16,6 @@ export function BusinessProvider({ children }) {
     loadBusinesses();
   }, []);
 
-  // Socket.IO: Review değişikliklerini dinle (sadece user varsa)
   useEffect(() => {
     if (!user) return; // User yoksa socket bağlantısı kurma
     
@@ -28,17 +28,12 @@ export function BusinessProvider({ children }) {
       });
       
       socket.on('connect', () => {
-        console.log('BusinessContext: Socket bağlandı');
-        // Kullanıcının şehrine join ol
         const cityName = user?.city || 'izmir';
         socket.emit('join:city', cityName);
-        console.log(`BusinessContext: City room'a join oldu: ${cityName}`);
       });
 
     socket.on('reviews:changed', (payload) => {
-      console.log('BusinessContext: Review değişikliği alındı:', payload);
       if (payload?.businessId && payload?.rating) {
-        // İşletmenin rating'ini güncelle
         setBusinesses(prevBusinesses => 
           prevBusinesses.map(business => 
             business.id === payload.businessId 
@@ -49,17 +44,15 @@ export function BusinessProvider({ children }) {
       }
     });
 
-    socket.on('businesses:changed', (payload) => {
-      console.log('BusinessContext: İşletme değişikliği alındı:', payload);
-      // İşletme listesini yeniden yükle
+    socket.on('businesses:changed', () => {
       loadBusinesses();
     });
 
       socket.on('error', (error) => {
-        console.error('BusinessContext: Socket hatası:', error);
+        logError('BusinessContext', 'Socket hatası');
       });
     } catch (error) {
-      console.error('BusinessContext: Socket bağlantı hatası:', error);
+      logError('BusinessContext', 'Socket bağlantı hatası');
     }
 
     return () => {
@@ -73,12 +66,10 @@ export function BusinessProvider({ children }) {
   const loadBusinesses = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/businesses`);
-      console.log('API\'den gelen işletmeler:', response.data);
-      setBusinesses(response.data);
+      const response = await axios.get(`${API_BASE_URL}/businesses`, { timeout: 5000 });
+      setBusinesses(response.data || []);
     } catch (error) {
-      console.error('İşletmeler yüklenirken hata:', error);
-      // Hata durumunda boş array kullan
+      logError('BusinessContext', 'İşletmeler yüklenirken hata');
       setBusinesses([]);
     } finally {
       setLoading(false);

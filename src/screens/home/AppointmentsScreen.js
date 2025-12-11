@@ -10,50 +10,6 @@ import RateAppointmentScreen from './RateAppointmentScreen';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
 
-
-const SAMPLE_APPOINTMENTS = [
-  {
-    id: 1,
-    businessName: 'Kuzenler OtoYıkama',
-    service: 'Tam Yıkama',
-    date: '15 Aralık 2024',
-    time: '14:30',
-    status: 'active',
-    price: '450 ₺',
-    address: 'Paşakonak, Çamlık Sk. no:9/A'
-  },
-  {
-    id: 2,
-    businessName: 'Temiz Oto',
-    service: 'İç Temizlik',
-    date: '12 Aralık 2024',
-    time: '10:00',
-    status: 'active',
-    price: '300 ₺',
-    address: 'Merkez, Atatürk Cd. no:15'
-  },
-  {
-    id: 3,
-    businessName: 'Kuzenler OtoYıkama',
-    service: 'Tam Yıkama',
-    date: '10 Aralık 2024',
-    time: '16:00',
-    status: 'completed',
-    price: '450 ₺',
-    address: 'Paşakonak, Çamlık Sk. no:9/A'
-  },
-  {
-    id: 4,
-    businessName: 'Hızlı Yıkama',
-    service: 'Dış Yıkama',
-    date: '8 Aralık 2024',
-    time: '11:30',
-    status: 'completed',
-    price: '200 ₺',
-    address: 'Yeni Mahalle, İnönü Sk. no:3'
-  },
-];
-
 export default function AppointmentsScreen({ navigation }) {
   const [selectedTab, setSelectedTab] = useState('pending');
   const { appointments, loading, refreshAppointments, loadAppointments } = useAppointments();
@@ -62,7 +18,6 @@ export default function AppointmentsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
-  // Ekran odaklandığında bir kez güncelle (ilk yük), periodik auto-refresh yok
   useFocusEffect(
     React.useCallback(() => {
       if (user?.id) {
@@ -72,7 +27,6 @@ export default function AppointmentsScreen({ navigation }) {
     }, [user?.id, refreshAppointments])
   );
 
-  // Socket.IO ile müşterinin odasına katıl, anlık değişiklikleri yansıt
   useEffect(() => {
     if (!user?.id) return;
     const socket = io(API_BASE_URL, { transports: ['websocket'], forceNew: true });
@@ -80,7 +34,6 @@ export default function AppointmentsScreen({ navigation }) {
       socket.emit('join:customer', user.id);
     });
     socket.on('appointment:created', () => {
-      // Yeni randevu eklendiğinde listeleri tazele
       refreshAppointments();
     });
     return () => {
@@ -105,8 +58,8 @@ export default function AppointmentsScreen({ navigation }) {
               loadAppointments(); // Randevuları yeniden yükle
               Alert.alert('Başarılı', 'Randevu iptal edildi');
             } catch (error) {
-              console.error('Randevu iptal hatası:', error);
-              Alert.alert('Hata', 'Randevu iptal edilemedi');
+              logError('AppointmentsScreen', 'Randevu iptal hatası');
+              Alert.alert('Hata', getErrorMessage(error) || 'Randevu iptal edilemedi. Lütfen tekrar deneyin.');
             }
           }
         }
@@ -115,7 +68,6 @@ export default function AppointmentsScreen({ navigation }) {
   };
 
   const getStatusInfo = (status) => {
-    // Status'u normalize et (uppercase'e çevir ve trim yap)
     const normalizedStatus = status ? String(status).toUpperCase().trim() : '';
     
     switch (normalizedStatus) {
@@ -129,8 +81,6 @@ export default function AppointmentsScreen({ navigation }) {
       case 'COMPLETED':
         return { text: 'Tamamlandı', color: '#6b7280' };
       default:
-        // Debug için console.log ekleyelim
-        console.log('Bilinmeyen status:', status, 'normalized:', normalizedStatus);
         return { text: normalizedStatus || 'Bilinmiyor', color: '#6b7280' };
     }
   };
@@ -142,15 +92,10 @@ export default function AppointmentsScreen({ navigation }) {
     if (selectedTab === 'confirmed') {
       return appointment.status === 'CONFIRMED';
     }
-    // completed
     return appointment.status === 'CANCELLED' || appointment.status === 'COMPLETED';
   });
 
   const renderAppointment = ({ item }) => {
-    // Debug: Status değerini kontrol et
-    if (item.status) {
-      console.log('Appointment status:', item.status, 'type:', typeof item.status);
-    }
     const statusInfo = getStatusInfo(item.status);
     const appointmentDate = new Date(item.date);
     const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
@@ -163,8 +108,6 @@ export default function AppointmentsScreen({ navigation }) {
       <TouchableOpacity 
         style={styles.appointmentCard}
         onPress={() => {
-          // ProfileStack'e gitmek için parent navigation kullan
-          // AppointmentsScreen -> HomeTabs -> Profile (ProfileStack) -> AppointmentDetail
           const homeTabsNavigation = navigation.getParent();
           if (homeTabsNavigation) {
             homeTabsNavigation.navigate('Profile', {
@@ -234,8 +177,6 @@ export default function AppointmentsScreen({ navigation }) {
                 <TouchableOpacity 
                   style={styles.rateButton}
                   onPress={() => {
-                    console.log('Değerlendir butonuna tıklandı, randevu:', item);
-                    // Review bilgisini temizle, sadece gerekli bilgileri geç
                     const cleanAppointment = {
                       id: item.id,
                       businessId: item.businessId,
@@ -342,7 +283,6 @@ export default function AppointmentsScreen({ navigation }) {
           }}
           onSuccess={() => {
             setShowRateModal(false);
-            // Randevuları yeniden yükle
             loadAppointments();
           }}
         />

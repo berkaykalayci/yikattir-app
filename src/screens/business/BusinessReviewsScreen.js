@@ -31,7 +31,6 @@ export default function BusinessReviewsScreen({ navigation }) {
     loadReviews();
   }, [businessId]);
 
-  // Socket: işletme odasında reviews değişimini dinle
   useEffect(() => {
     if (!businessId) return;
     const socket = io(API_BASE_URL, { transports: ['websocket'], forceNew: true });
@@ -49,7 +48,6 @@ export default function BusinessReviewsScreen({ navigation }) {
   const loadReviews = async () => {
     try {
       setLoading(true);
-      // Önce profil üzerinden detay çekelim ve içindeki reviews listesini kullanalım
       const res = await axios.get(`${API_BASE_URL}/businesses/profile/${businessId}`);
       const raw = Array.isArray(res.data?.reviews) ? res.data.reviews : [];
       const normalized = raw.map((r) => ({

@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const authenticateToken = require('../middleware/auth');
+const { createAppointmentStatusNotification } = require('../services/notificationService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -116,6 +117,28 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     } catch (e) {
       console.error('Socket emit hatası:', e);
+    }
+
+    // Randevu oluşturulduğunda bildirim gönder (PENDING durumu)
+    try {
+      const io = req.app.get('io');
+      await createAppointmentStatusNotification({
+        appointmentId: appointment.id,
+        customerId: appointment.customerId,
+        businessId: appointment.businessId,
+        oldStatus: null,
+        newStatus: 'PENDING',
+        appointmentData: {
+          business: appointment.business,
+          service: appointment.service,
+          date: appointment.date,
+          time: appointment.time
+        },
+        io
+      });
+    } catch (error) {
+      console.error('Bildirim oluşturma hatası:', error);
+      // Bildirim hatası randevu oluşturmayı engellemez
     }
 
     res.status(201).json(appointment);
@@ -316,11 +339,28 @@ router.patch('/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(status)) {
+  if (!['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'REJECTED'].includes(status)) {
     return res.status(400).json({ error: 'Geçersiz durum.' });
   }
 
   try {
+    // Eski durumu al
+    const oldAppointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        business: true,
+        service: true,
+        customer: true,
+      },
+    });
+
+    if (!oldAppointment) {
+      return res.status(404).json({ error: 'Randevu bulunamadı.' });
+    }
+
+    const oldStatus = oldAppointment.status;
+
+    // Durumu güncelle
     const appointment = await prisma.appointment.update({
       where: { id },
       data: { status },
@@ -352,6 +392,30 @@ router.patch('/:id/status', async (req, res) => {
       console.error('Socket emit (status) hatası:', e);
     }
 
+    // Durum değiştiyse bildirim gönder
+    if (oldStatus !== status) {
+      try {
+        const io = req.app.get('io');
+        await createAppointmentStatusNotification({
+          appointmentId: appointment.id,
+          customerId: appointment.customerId,
+          businessId: appointment.businessId,
+          oldStatus,
+          newStatus: status,
+          appointmentData: {
+            business: appointment.business,
+            service: appointment.service,
+            date: appointment.date,
+            time: appointment.time
+          },
+          io
+        });
+      } catch (error) {
+        console.error('Bildirim oluşturma hatası:', error);
+        // Bildirim hatası durum güncellemesini engellemez
+      }
+    }
+
     res.json(appointment);
   } catch (error) {
     console.error('Randevu durumu güncelleme hatası:', error);
@@ -377,6 +441,20 @@ router.patch('/:id/confirm', async (req, res) => {
   const { id } = req.params;
   
   try {
+    // Eski durumu al
+    const oldAppointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        business: true,
+        service: true,
+        customer: true,
+      },
+    });
+
+    if (!oldAppointment) {
+      return res.status(404).json({ error: 'Randevu bulunamadı.' });
+    }
+
     const appointment = await prisma.appointment.update({
       where: { id },
       data: { status: 'CONFIRMED' },
@@ -391,6 +469,26 @@ router.patch('/:id/confirm', async (req, res) => {
       }
     });
 
+    // Bildirim gönder
+    try {
+      const io = req.app.get('io');
+      await createAppointmentStatusNotification({
+        appointmentId: appointment.id,
+        customerId: appointment.customerId,
+        businessId: appointment.businessId,
+        oldStatus: oldAppointment.status,
+        newStatus: 'CONFIRMED',
+        appointmentData: {
+          business: appointment.business,
+          service: appointment.service,
+          date: appointment.date,
+          time: appointment.time
+        },
+        io
+      });
+    } catch (error) {
+      console.error('Bildirim oluşturma hatası:', error);
+    }
 
     res.json(appointment);
   } catch (error) {
@@ -404,6 +502,20 @@ router.patch('/:id/reject', async (req, res) => {
   const { id } = req.params;
   
   try {
+    // Eski durumu al
+    const oldAppointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        business: true,
+        service: true,
+        customer: true,
+      },
+    });
+
+    if (!oldAppointment) {
+      return res.status(404).json({ error: 'Randevu bulunamadı.' });
+    }
+
     const appointment = await prisma.appointment.update({
       where: { id },
       data: { status: 'REJECTED' },
@@ -418,6 +530,26 @@ router.patch('/:id/reject', async (req, res) => {
       }
     });
 
+    // Bildirim gönder
+    try {
+      const io = req.app.get('io');
+      await createAppointmentStatusNotification({
+        appointmentId: appointment.id,
+        customerId: appointment.customerId,
+        businessId: appointment.businessId,
+        oldStatus: oldAppointment.status,
+        newStatus: 'REJECTED',
+        appointmentData: {
+          business: appointment.business,
+          service: appointment.service,
+          date: appointment.date,
+          time: appointment.time
+        },
+        io
+      });
+    } catch (error) {
+      console.error('Bildirim oluşturma hatası:', error);
+    }
 
     res.json(appointment);
   } catch (error) {
@@ -431,6 +563,20 @@ router.patch('/:id/complete', async (req, res) => {
   const { id } = req.params;
   
   try {
+    // Eski durumu al
+    const oldAppointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        business: true,
+        service: true,
+        customer: true,
+      },
+    });
+
+    if (!oldAppointment) {
+      return res.status(404).json({ error: 'Randevu bulunamadı.' });
+    }
+
     const appointment = await prisma.appointment.update({
       where: { id },
       data: { status: 'COMPLETED' },
@@ -445,6 +591,26 @@ router.patch('/:id/complete', async (req, res) => {
       }
     });
 
+    // Bildirim gönder
+    try {
+      const io = req.app.get('io');
+      await createAppointmentStatusNotification({
+        appointmentId: appointment.id,
+        customerId: appointment.customerId,
+        businessId: appointment.businessId,
+        oldStatus: oldAppointment.status,
+        newStatus: 'COMPLETED',
+        appointmentData: {
+          business: appointment.business,
+          service: appointment.service,
+          date: appointment.date,
+          time: appointment.time
+        },
+        io
+      });
+    } catch (error) {
+      console.error('Bildirim oluşturma hatası:', error);
+    }
 
     res.json(appointment);
   } catch (error) {

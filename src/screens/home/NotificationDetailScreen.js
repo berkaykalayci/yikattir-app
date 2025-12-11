@@ -7,6 +7,46 @@ export default function NotificationDetailScreen({ navigation, route }) {
   const { notification } = route.params || {};
   const insets = useSafeAreaInsets();
 
+  const formatTime = (createdAt) => {
+    if (!createdAt) return '';
+    try {
+      const now = new Date();
+      const notificationDate = new Date(createdAt);
+      const diffInMs = now - notificationDate;
+      const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+      const diffInDays = Math.floor(diffInHours / 24);
+      
+      if (diffInMinutes < 1) return 'Az önce';
+      if (diffInMinutes < 60) return `${diffInMinutes} dakika önce`;
+      if (diffInHours < 24) return `${diffInHours} saat önce`;
+      if (diffInDays < 7) return `${diffInDays} gün önce`;
+      
+      return notificationDate.toLocaleDateString('tr-TR', {
+        day: '2-digit',
+        month: 'short',
+        year: notificationDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
+    } catch (error) {
+      return '';
+    }
+  };
+
+  const getIconInfo = (type) => {
+    switch (type) {
+      case 'appointment':
+        return { name: 'calendar', color: '#0F4C4C' };
+      case 'promotion':
+        return { name: 'gift', color: '#f59e0b' };
+      case 'system':
+        return { name: 'information-circle', color: '#3b82f6' };
+      default:
+        return { name: 'notifications', color: '#6b7280' };
+    }
+  };
+
+  const iconInfo = getIconInfo(notification?.type);
+
   const getActionButton = () => {
     switch (notification?.type) {
       case 'appointment':
@@ -45,69 +85,43 @@ export default function NotificationDetailScreen({ navigation, route }) {
   };
 
   const getDetailedContent = () => {
+    const message = notification?.message || notification?.body || '';
+    
+    const messageLines = message ? message.split('\n') : [];
+    
+    let sectionTitle = 'Bildirim Detayı';
     switch (notification?.type) {
       case 'appointment':
-        return {
-          title: 'Randevu Detayları',
-          content: [
-            '• Randevunuz yaklaşık 2 saat sonra başlayacak',
-            '• İşletme: Kuzenler OtoYıkama',
-            '• Konum: Paşakonak, Çamlık Sk. no:9/A, Bandırma',
-            '• Hizmet: Oto Yıkama + İç Temizlik',
-            '• Tahmini süre: 45-60 dakika',
-            '• Ödeme: Nakit veya kart ile yapılabilir',
-            '',
-            'Randevunuzu iptal etmek veya değiştirmek için "Randevularım" bölümünü kullanabilirsiniz.'
-          ]
-        };
+        sectionTitle = 'Randevu Detayları';
+        break;
       case 'promotion':
-        return {
-          title: 'Kampanya Detayları',
-          content: [
-            '🎉 Özel İndirim Fırsatı!',
-            '',
-            'Bu hafta tüm oto yıkama hizmetlerinde %20 indirim!',
-            '',
-            'Geçerli hizmetler:',
-            '• Standart Oto Yıkama',
-            '• Premium Oto Yıkama',
-            '• İç Temizlik',
-            '• Motor Temizliği',
-            '• Lastik Parlatma',
-            '',
-            'Kampanya süresi: 15-21 Aralık 2024',
-            'Kampanyadan yararlanmak için randevu alırken "KAMPANYA20" kodunu kullanın.'
-          ]
-        };
+        sectionTitle = 'Kampanya Detayları';
+        break;
       case 'system':
-        return {
-          title: 'Hoş Geldiniz!',
-          content: [
-            'YIKATTIR uygulamasına hoş geldiniz! 🚗',
-            '',
-            'Uygulamayı kullanmaya başlamak için:',
-            '',
-            '1. Konumunuzu belirleyin',
-            '2. Yakınınızdaki oto yıkama işletmelerini görün',
-            '3. Beğendiğiniz işletmeyi seçin',
-            '4. Randevu alın ve kolayca ödeme yapın',
-            '',
-            'Özellikler:',
-            '• Yakındaki işletmeleri bulma',
-            '• Online randevu alma',
-            '• Güvenli ödeme',
-            '• Değerlendirme yapma',
-            '• Favori işletmeleri kaydetme',
-            '',
-            'Herhangi bir sorunuz olursa destek ekibimizle iletişime geçebilirsiniz.'
-          ]
-        };
+        sectionTitle = 'Sistem Bildirimi';
+        break;
       default:
-        return {
-          title: 'Bildirim Detayı',
-          content: [notification?.message || 'Bildirim içeriği bulunamadı.']
-        };
+        sectionTitle = notification?.title || 'Bildirim Detayı';
     }
+    
+    let content = [];
+    if (messageLines.length > 0) {
+      content = messageLines;
+      if (notification?.type === 'appointment') {
+        content = [
+          ...messageLines,
+          '',
+          'Randevunuzu görüntülemek veya yönetmek için "Randevularım" bölümünü kullanabilirsiniz.'
+        ];
+      }
+    } else {
+      content = [notification?.title || 'Bildirim içeriği bulunamadı.'];
+    }
+    
+    return {
+      title: sectionTitle,
+      content: content
+    };
   };
 
   const detailedContent = getDetailedContent();
@@ -127,12 +141,14 @@ export default function NotificationDetailScreen({ navigation, route }) {
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <View style={styles.notificationHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: notification?.iconColor + '20' }]}>
-            <Ionicons name={notification?.icon} size={32} color={notification?.iconColor} />
+          <View style={[styles.iconContainer, { backgroundColor: iconInfo.color + '20' }]}>
+            <Ionicons name={iconInfo.name} size={32} color={iconInfo.color} />
           </View>
           <View style={styles.headerText}>
-            <Text style={styles.notificationTitle}>{notification?.title}</Text>
-            <Text style={styles.notificationTime}>{notification?.time}</Text>
+            <Text style={styles.notificationTitle}>{notification?.title || 'Bildirim'}</Text>
+            <Text style={styles.notificationTime}>
+              {formatTime(notification?.createdAt)}
+            </Text>
           </View>
         </View>
 

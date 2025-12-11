@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 
 
 export default function BusinessContactScreen({ navigation }) {
@@ -28,21 +29,15 @@ export default function BusinessContactScreen({ navigation }) {
 
   const loadBusinessContact = async () => {
     try {
-      console.log('İşletme iletişim bilgileri yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
       setBusinessId(foundBusinessId);
       
-      // İşletme bilgilerini API'den al
       const response = await axios.get(`${API_BASE_URL}/businesses/profile/${foundBusinessId}`);
       const businessData = response.data;
       
-      console.log('API\'den gelen işletme iletişim bilgileri:', businessData);
-      
-      // Form alanlarını doldur
       setPhone(businessData.owner?.phone || '');
       setEmail(businessData.owner?.email || user.email || '');
       setWebsite(businessData.website || '');
@@ -50,7 +45,7 @@ export default function BusinessContactScreen({ navigation }) {
       setWhatsapp(businessData.whatsapp || businessData.owner?.phone || '');
       
     } catch (error) {
-      console.error('İşletme iletişim bilgileri yüklenirken hata:', error);
+      logError('BusinessContactScreen', 'İşletme iletişim bilgileri yüklenirken hata');
       Alert.alert('Hata', 'İletişim bilgileri yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -70,7 +65,6 @@ export default function BusinessContactScreen({ navigation }) {
         whatsapp: whatsapp
       };
 
-      console.log('Güncellenecek iletişim verisi:', updateData);
       
       await axios.patch(`${API_BASE_URL}/businesses/${businessId}`, updateData);
       
@@ -78,7 +72,7 @@ export default function BusinessContactScreen({ navigation }) {
       setIsEditing(false);
       
     } catch (error) {
-      console.error('İletişim güncelleme hatası:', error);
+      logError('BusinessContactScreen', 'İletişim güncelleme hatası');
       Alert.alert('Hata', 'İletişim bilgileri güncellenirken bir hata oluştu');
     }
   };

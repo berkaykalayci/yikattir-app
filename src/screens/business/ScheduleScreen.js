@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 
 
 const DAYS = [
@@ -35,11 +36,9 @@ export default function ScheduleScreen({ navigation }) {
     }
   }, [businessId, selectedDate]);
 
-  // Slot aralığı değiştiğinde otomatik kaydet (kolaylık için)
   useEffect(() => {
     const autoSave = async () => {
       if (!businessId) return;
-      // workingHours hazır değilse bekle
       if (!Object.keys(workingHours).length) return;
       try {
         const workingHoursData = Object.keys(workingHours).map((dayName, index) => ({
@@ -52,14 +51,12 @@ export default function ScheduleScreen({ navigation }) {
           workingHours: workingHoursData,
           slotIntervalMin: parseInt(slotIntervalMin || '30', 10),
         });
-        // Kaydettikten sonra slotları yeni aralıkla yenile
         await loadSlotsForDate(selectedDate);
       } catch (e) {
-        console.error('Slot aralığı kaydedilirken hata:', e);
+        logError('ScheduleScreen', 'Slot aralığı kaydedilirken hata');
       }
     };
     autoSave();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotIntervalMin]);
 
   const formatDateParam = (d) => {
@@ -77,7 +74,7 @@ export default function ScheduleScreen({ navigation }) {
       const resp = await axios.get(url);
       setSlots(resp.data.slots || []);
     } catch (error) {
-      console.error('Slotlar yüklenirken hata:', error);
+      logError('ScheduleScreen', 'Slotlar yüklenirken hata');
       setSlots([]);
     } finally {
       setLoadingSlots(false);
@@ -86,46 +83,35 @@ export default function ScheduleScreen({ navigation }) {
 
   const loadSchedule = async () => {
     try {
-      console.log('Çalışma saatleri yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
-      console.log('İşletme ID aranıyor, userId:', user.id);
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
-      console.log('Bulunan işletme ID:', foundBusinessId);
       setBusinessId(foundBusinessId);
       
-      // Çalışma saatlerini API'den yükle
-      console.log('Çalışma saatleri API\'den alınıyor...');
       const response = await axios.get(`${API_BASE_URL}/businesses/profile/${foundBusinessId}`);
       const businessData = response.data;
       
-      console.log('API\'den gelen çalışma saatleri:', businessData.workingHours);
-      
-      // Çalışma saatlerini formatla
       const formattedHours = {};
       DAYS.forEach((day, index) => {
         const dayNumber = index + 1;
         const dayHours = businessData.workingHours?.find(wh => wh.dayOfWeek === dayNumber);
         
         formattedHours[day] = {
-          isOpen: dayHours?.isOpen || (index < 6), // Pazartesi-Cumartesi varsayılan açık
+          isOpen: dayHours?.isOpen || (index < 6),
           startTime: dayHours?.openTime || '09:00',
-          endTime: dayHours?.closeTime || (index === 5 ? '17:00' : '18:00') // Cumartesi 17:00, diğerleri 18:00
+          endTime: dayHours?.closeTime || (index === 5 ? '17:00' : '18:00')
         };
       });
       
-      console.log('Formatlanmış çalışma saatleri:', formattedHours);
       setWorkingHours(formattedHours);
       if (typeof businessData.slotIntervalMin === 'number') {
         setSlotIntervalMin(String(businessData.slotIntervalMin));
       }
       
     } catch (error) {
-      console.error('Çalışma saatleri yüklenirken hata:', error);
+      logError('ScheduleScreen', 'Çalışma saatleri yüklenirken hata');
       
-      // Hata durumunda varsayılan değerler
       const defaultHours = {};
       DAYS.forEach((day, index) => {
         defaultHours[day] = {
@@ -147,12 +133,11 @@ export default function ScheduleScreen({ navigation }) {
       const response = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       setBusinessId(response.data.id);
     } catch (error) {
-      console.error('İşletme ID bulunurken hata:', error);
+      logError('ScheduleScreen', 'İşletme ID bulunurken hata');
     }
   };
 
   const updateWorkingHours = async (day, field, value) => {
-    // workingHours henüz yüklenmemişse işlem yapma
     if (!workingHours[day]) {
       return;
     }
@@ -164,7 +149,6 @@ export default function ScheduleScreen({ navigation }) {
     
     setWorkingHours(updatedHours);
     
-    // API'ye kaydet
     try {
       const workingHoursData = Object.keys(updatedHours).map((dayName, index) => ({
         dayOfWeek: index + 1,
@@ -179,7 +163,7 @@ export default function ScheduleScreen({ navigation }) {
       });
       
     } catch (error) {
-      console.error('Çalışma saatleri güncellenirken hata:', error);
+      logError('ScheduleScreen', 'Çalışma saatleri güncellenirken hata');
       Alert.alert('Hata', 'Çalışma saatleri güncellenirken bir hata oluştu');
     }
   };
@@ -217,11 +201,10 @@ export default function ScheduleScreen({ navigation }) {
         slotIntervalMin: parseInt(slotIntervalMin || '30', 10),
       });
 
-      // Yeni aralıkla slotları yenile
       await loadSlotsForDate(selectedDate);
       Alert.alert('Başarılı', 'Çalışma saatleri ve slot aralığı kaydedildi');
     } catch (error) {
-      console.error('Çalışma saatleri kaydedilirken hata:', error);
+      logError('ScheduleScreen', 'Çalışma saatleri kaydedilirken hata');
       Alert.alert('Hata', 'Kaydetme sırasında bir sorun oluştu');
     }
   };

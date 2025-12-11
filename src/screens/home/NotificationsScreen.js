@@ -5,95 +5,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
 import { useAuth } from '../../contexts/AuthContext';
-
-
-const SAMPLE_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'appointment',
-    title: 'Randevu Hatırlatması',
-    message: 'Kuzenler OtoYıkama randevunuz 2 saat sonra başlayacak',
-    time: '2 saat önce',
-    isRead: false,
-    icon: 'calendar',
-    iconColor: '#0F4C4C'
-  },
-  {
-    id: 2,
-    type: 'promotion',
-    title: 'Özel Kampanya!',
-    message: 'Bu hafta tüm hizmetlerde %20 indirim fırsatı',
-    time: '1 gün önce',
-    isRead: false,
-    icon: 'gift',
-    iconColor: '#f59e0b'
-  },
-  {
-    id: 3,
-    type: 'appointment',
-    title: 'Randevu Onaylandı',
-    message: 'Temiz Oto randevunuz onaylandı. 15 Aralık 14:30',
-    time: '2 gün önce',
-    isRead: true,
-    icon: 'checkmark-circle',
-    iconColor: '#10b981'
-  },
-  {
-    id: 4,
-    type: 'system',
-    title: 'Hoş Geldiniz!',
-    message: 'YIKATTIR uygulamasına hoş geldiniz. İlk randevunuzu alın!',
-    time: '3 gün önce',
-    isRead: true,
-    icon: 'information-circle',
-    iconColor: '#3b82f6'
-  },
-  {
-    id: 5,
-    type: 'promotion',
-    title: 'Yeni İşletme',
-    message: 'Yakınınızda yeni bir oto yıkama işletmesi açıldı',
-    time: '1 hafta önce',
-    isRead: true,
-    icon: 'business',
-    iconColor: '#8b5cf6'
-  },
-];
+import { useNotifications } from '../../contexts/NotificationContext';
+import { getErrorMessage, logError } from '../../utils/errorMessages';
 
 export default function NotificationsScreen({ navigation }) {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedItems, setSelectedItems] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { notifications, loading, loadNotifications, markAsRead, markAllAsRead: markAllAsReadContext } = useNotifications();
 
-  useEffect(() => {
-    if (user) {
-      loadNotifications();
-    }
-  }, [user]);
-
-  const loadNotifications = async () => {
+  const handleMarkAsRead = async (id) => {
     try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/notifications/user/${user.id}`);
-      setNotifications(response.data);
+      await markAsRead(id);
     } catch (error) {
-      console.error('Bildirimler yüklenirken hata:', error);
-      // Fallback data
-      setNotifications(SAMPLE_NOTIFICATIONS);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markAsRead = async (id) => {
-    try {
-      await axios.patch(`${API_BASE_URL}/notifications/${id}/read`);
-      loadNotifications(); // Bildirimleri yeniden yükle
-    } catch (error) {
-      console.error('Bildirim okundu işaretleme hatası:', error);
+      logError('NotificationsScreen', 'Bildirim okundu işaretleme hatası');
     }
   };
 
@@ -112,8 +38,8 @@ export default function NotificationsScreen({ navigation }) {
               loadNotifications();
               Alert.alert('Başarılı', 'Bildirim silindi');
             } catch (error) {
-              console.error('Bildirim silme hatası:', error);
-              Alert.alert('Hata', 'Bildirim silinemedi');
+              logError('NotificationsScreen', 'Bildirim silme hatası');
+              Alert.alert('Hata', getErrorMessage(error) || 'Bildirim silinemedi. Lütfen tekrar deneyin.');
             }
           }
         }
@@ -123,23 +49,22 @@ export default function NotificationsScreen({ navigation }) {
 
   const markAllAsRead = async () => {
     try {
-      await axios.patch(`${API_BASE_URL}/notifications/user/${customerId}/mark-all-read`);
-      loadNotifications();
+      await markAllAsReadContext();
       Alert.alert('Başarılı', 'Tüm bildirimler okundu olarak işaretlendi');
     } catch (error) {
-      console.error('Tüm bildirimleri okundu işaretleme hatası:', error);
-      Alert.alert('Hata', 'Bildirimler işaretlenemedi');
+      logError('NotificationsScreen', 'Tüm bildirimleri okundu işaretleme hatası');
+      Alert.alert('Hata', getErrorMessage(error) || 'Bildirimler işaretlenemedi. Lütfen tekrar deneyin.');
     }
   };
 
   const deleteAllRead = async () => {
     try {
-      await axios.delete(`${API_BASE_URL}/notifications/user/${customerId}/delete-read`);
+      await axios.delete(`${API_BASE_URL}/notifications/user/${user.id}/delete-read`);
       loadNotifications();
       Alert.alert('Başarılı', 'Okunmuş bildirimler silindi');
     } catch (error) {
-      console.error('Okunmuş bildirimleri silme hatası:', error);
-      Alert.alert('Hata', 'Bildirimler silinemedi');
+      logError('NotificationsScreen', 'Okunmuş bildirimleri silme hatası');
+      Alert.alert('Hata', getErrorMessage(error) || 'Bildirimler silinemedi. Lütfen tekrar deneyin.');
     }
   };
 
@@ -166,8 +91,8 @@ export default function NotificationsScreen({ navigation }) {
               loadNotifications();
               Alert.alert('Başarılı', 'Seçili bildirimler silindi');
             } catch (error) {
-              console.error('Toplu silme hatası:', error);
-              Alert.alert('Hata', 'Bildirimler silinemedi');
+              logError('NotificationsScreen', 'Toplu silme hatası');
+              Alert.alert('Hata', getErrorMessage(error) || 'Bildirimler silinemedi. Lütfen tekrar deneyin.');
             }
           }
         }
@@ -210,7 +135,7 @@ export default function NotificationsScreen({ navigation }) {
       <TouchableOpacity 
         style={styles.notificationContent}
         onPress={() => {
-          markAsRead(item.id);
+          handleMarkAsRead(item.id);
           navigation.navigate('NotificationDetail', { notification: item });
         }}
       >
@@ -226,7 +151,7 @@ export default function NotificationsScreen({ navigation }) {
             {item.title}
           </Text>
           <Text style={styles.notificationMessage}>
-            {item.body}
+            {item.message || item.body || ''}
           </Text>
           <Text style={styles.notificationTime}>
             {formatTime(item.createdAt)}

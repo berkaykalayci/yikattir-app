@@ -25,28 +25,21 @@ export default function ServicesScreen({ navigation }) {
 
   const loadServices = async () => {
     try {
-      console.log('Hizmetler yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
-      console.log('İşletme ID aranıyor, userId:', user.id);
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
-      console.log('Bulunan işletme ID:', foundBusinessId);
       setBusinessId(foundBusinessId);
       
-      // Hizmetleri API'den yükle
-      console.log('Hizmetler API\'den alınıyor...');
       const response = await axios.get(`${API_BASE_URL}/businesses/profile/${foundBusinessId}`);
       const businessData = response.data;
       
-      console.log('API\'den gelen hizmetler:', businessData.services);
       setServices(businessData.services || []);
       
     } catch (error) {
-      console.error('Hizmetler yüklenirken hata:', error);
-      console.error('Hata detayları:', error.response?.data);
-      console.error('Status code:', error.response?.status);
+      logError('$(basename "$file" .js)', 'Hata');
+      logError('$(basename "$file" .js)', 'Hata');
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Hizmetler yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -58,7 +51,7 @@ export default function ServicesScreen({ navigation }) {
       const response = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       setBusinessId(response.data.id);
     } catch (error) {
-      console.error('İşletme ID bulunurken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
     }
   };
 
@@ -87,7 +80,6 @@ export default function ServicesScreen({ navigation }) {
       
       const response = await axios.post(`${API_BASE_URL}/services`, newService);
       
-      // Başarılı olursa listeyi yenile
       await loadServices();
       
       setName('');
@@ -96,7 +88,7 @@ export default function ServicesScreen({ navigation }) {
       
       Alert.alert('Başarılı', 'Hizmet başarıyla eklendi');
     } catch (error) {
-      console.error('Hizmet eklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Hizmet eklenirken bir hata oluştu');
     }
   };
@@ -116,7 +108,7 @@ export default function ServicesScreen({ navigation }) {
               await loadServices();
               Alert.alert('Başarılı', 'Hizmet başarıyla silindi');
             } catch (error) {
-              console.error('Hizmet silinirken hata:', error);
+              logError('$(basename "$file" .js)', 'Hata');
               Alert.alert('Hata', 'Hizmet silinirken bir hata oluştu');
             }
           }

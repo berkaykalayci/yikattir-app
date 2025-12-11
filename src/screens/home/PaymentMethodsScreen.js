@@ -25,7 +25,7 @@ export default function PaymentMethodsScreen({ navigation }) {
       });
       setCards(response.data);
     } catch (error) {
-      console.error('Kartlar yüklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       setCards([]);
     } finally {
       setLoading(false);
@@ -69,7 +69,7 @@ export default function PaymentMethodsScreen({ navigation }) {
       
       Alert.alert('Başarılı', 'Kart varsayılan olarak ayarlandı');
     } catch (error) {
-      console.error('Kart varsayılan yapılırken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Kart varsayılan yapılamadı');
     }
   };
@@ -92,7 +92,7 @@ export default function PaymentMethodsScreen({ navigation }) {
               setCards(prev => prev.filter(card => card.id !== id));
               Alert.alert('Başarılı', 'Kart başarıyla silindi');
             } catch (error) {
-              console.error('Kart silinirken hata:', error);
+              logError('$(basename "$file" .js)', 'Hata');
               Alert.alert('Hata', 'Kart silinemedi');
             }
           }

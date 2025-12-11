@@ -24,7 +24,6 @@ export default function BusinessAppointmentsScreen({ navigation }) {
     }
   }, [user]);
 
-  // Sayfa odaklanınca veriyi yenile
   useEffect(() => {
     const onFocus = navigation.addListener('focus', () => {
       if (user && businessId) {
@@ -36,7 +35,6 @@ export default function BusinessAppointmentsScreen({ navigation }) {
     };
   }, [navigation, user, businessId]);
 
-  // Socket.IO ile bekleyen randevuları anlık ekle
   useEffect(() => {
     if (!businessId) return;
     const socket = io(API_BASE_URL, { transports: ['websocket'], forceNew: true });
@@ -44,7 +42,6 @@ export default function BusinessAppointmentsScreen({ navigation }) {
       socket.emit('join:business', businessId);
     });
     socket.on('appointment:created', (payload) => {
-      // Yalnızca bekleyen sekmesi için görünür listeye ekle
       setAppointments((prev) => [
         {
           id: payload.id,
@@ -67,16 +64,14 @@ export default function BusinessAppointmentsScreen({ navigation }) {
     try {
       setLoading(true);
       
-      // İşletme ID'sini bul
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
       setBusinessId(foundBusinessId);
       
-      // Randevuları yükle
       await loadAppointments(foundBusinessId);
       
     } catch (error) {
-      console.error('İşletme verileri yüklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Veriler yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -85,13 +80,9 @@ export default function BusinessAppointmentsScreen({ navigation }) {
 
   const loadAppointments = async (businessIdParam) => {
     try {
-      console.log('BusinessAppointmentsScreen: Randevular yükleniyor, businessId:', businessIdParam);
-      // Tüm randevuları API'den al (tarih filtresi olmadan)
       const response = await axios.get(`${API_BASE_URL}/appointments/business/${businessIdParam}`);
       const appointmentsData = response.data;
-      console.log('BusinessAppointmentsScreen: API\'den gelen randevular:', appointmentsData);
       
-      // Randevuları formatla
       const formattedAppointments = appointmentsData.map(apt => ({
         id: apt.id,
         customer: apt.customer?.name || 'Müşteri',
@@ -108,22 +99,18 @@ export default function BusinessAppointmentsScreen({ navigation }) {
         createdAt: apt.createdAt
       }));
       
-      // Tamamlanan randevuları tamamlama sırasına göre sırala (en son tamamlanan en üstte)
       const sortedAppointments = formattedAppointments.sort((a, b) => {
-        // Tamamlanan randevular için updatedAt'e göre sırala (en yeni en üstte)
         if (a.status === 'completed' && b.status === 'completed') {
           return new Date(b.updatedAt) - new Date(a.updatedAt);
         }
-        // Diğer durumlar için tarih ve saate göre sırala
         const aDateTime = new Date(`${a.date}T${a.time}:00`);
         const bDateTime = new Date(`${b.date}T${b.time}:00`);
         return aDateTime - bDateTime;
       });
       
-      console.log('Formatlanmış ve sıralanmış randevular:', sortedAppointments);
       setAppointments(sortedAppointments);
     } catch (error) {
-      console.error('Randevular yüklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Randevular yüklenirken bir hata oluştu');
     }
   };
@@ -150,54 +137,45 @@ export default function BusinessAppointmentsScreen({ navigation }) {
 
   const handleApproveAppointment = async (appointmentId) => {
     try {
-      console.log('Randevu onaylanıyor:', appointmentId);
       const response = await axios.patch(`${API_BASE_URL}/appointments/${appointmentId}/status`, {
         status: 'CONFIRMED'
       });
-      console.log('Randevu onaylandı:', response.data);
       
-      // Randevuları yeniden yükle
       await loadAppointments(businessId);
       
       Alert.alert('Başarılı', 'Randevu onaylandı');
     } catch (error) {
-      console.error('Randevu onaylama hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Randevu onaylanamadı');
     }
   };
 
   const handleRejectAppointment = async (appointmentId) => {
     try {
-      console.log('Randevu reddediliyor:', appointmentId);
       const response = await axios.patch(`${API_BASE_URL}/appointments/${appointmentId}/status`, {
         status: 'CANCELLED'
       });
-      console.log('Randevu reddedildi:', response.data);
       
-      // Randevuları yeniden yükle
       await loadAppointments(businessId);
       
       Alert.alert('Başarılı', 'Randevu reddedildi');
     } catch (error) {
-      console.error('Randevu reddetme hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Randevu reddedilemedi');
     }
   };
 
   const handleCompleteAppointment = async (appointmentId) => {
     try {
-      console.log('Randevu tamamlanıyor:', appointmentId);
       const response = await axios.patch(`${API_BASE_URL}/appointments/${appointmentId}/status`, {
         status: 'COMPLETED'
       });
-      console.log('Randevu tamamlandı:', response.data);
       
-      // Randevuları yeniden yükle
       await loadAppointments(businessId);
       
       Alert.alert('Başarılı', 'Randevu tamamlandı');
     } catch (error) {
-      console.error('Randevu tamamlama hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Randevu tamamlanamadı');
     }
   };
@@ -213,18 +191,15 @@ export default function BusinessAppointmentsScreen({ navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Randevu iptal ediliyor:', appointmentId);
               const response = await axios.patch(`${API_BASE_URL}/appointments/${appointmentId}/status`, {
                 status: 'CANCELLED'
               });
-              console.log('Randevu iptal edildi:', response.data);
               
-              // Randevuları yeniden yükle
               await loadAppointments(businessId);
               
               Alert.alert('Başarılı', 'Randevu iptal edildi');
             } catch (error) {
-              console.error('Randevu iptal etme hatası:', error);
+              logError('$(basename "$file" .js)', 'Hata');
               Alert.alert('Hata', 'Randevu iptal edilemedi');
             }
           }
@@ -240,7 +215,6 @@ export default function BusinessAppointmentsScreen({ navigation }) {
     if (selectedTab === 'confirmed') {
       return appointment.status === 'confirmed';
     }
-    // completed
     return appointment.status === 'completed' || appointment.status === 'cancelled';
   });
 
@@ -757,7 +731,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

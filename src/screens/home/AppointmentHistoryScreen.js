@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 import { useAuth } from '../../contexts/AuthContext';
 
 
@@ -35,7 +36,6 @@ export default function AppointmentHistoryScreen({ navigation }) {
       setLoading(true);
       const resp = await axios.get(`${API_BASE_URL}/appointments/customer/${user.id}`);
       const list = Array.isArray(resp.data) ? resp.data : [];
-      // Sadece geçmiş (tamamlanan/iptal edilen) randevulara odaklanmak için map'leyelim
       const mapped = list.map((a) => {
         const businessName = a.business?.name || 'İşletme';
         const businessLocation = a.business ? `${a.business.district || ''}${a.business.district && a.business.city ? ', ' : ''}${a.business.city || ''}` : '';
@@ -57,8 +57,8 @@ export default function AppointmentHistoryScreen({ navigation }) {
       });
       setAppointments(mapped);
     } catch (error) {
-      console.error('Geçmiş randevular yüklenirken hata:', error);
-      Alert.alert('Hata', 'Geçmiş randevular getirilemedi');
+      logError('AppointmentHistoryScreen', 'Geçmiş randevular yüklenirken hata');
+      Alert.alert('Hata', getErrorMessage(error) || 'Geçmiş randevular getirilemedi. Lütfen tekrar deneyin.');
       setAppointments([]);
     } finally {
       setLoading(false);
@@ -72,7 +72,6 @@ export default function AppointmentHistoryScreen({ navigation }) {
   }, [loadAppointments]);
 
   const filteredAppointments = useMemo(() => {
-    // History: sadece COMPLETED ve CANCELLED gösterelim (all = ikisini de)
     const onlyHistory = appointments.filter((x) => x.status === 'COMPLETED' || x.status === 'CANCELLED');
     if (filter === 'all') return onlyHistory;
     if (filter === 'completed') return onlyHistory.filter((a) => a.status === 'COMPLETED');
@@ -81,7 +80,6 @@ export default function AppointmentHistoryScreen({ navigation }) {
   }, [appointments, filter]);
 
   const getStatusColor = (status) => {
-    // Status'u normalize et (uppercase'e çevir)
     const normalizedStatus = status ? String(status).toUpperCase().trim() : '';
     
     switch (normalizedStatus) {
@@ -99,7 +97,6 @@ export default function AppointmentHistoryScreen({ navigation }) {
   };
 
   const getStatusText = (status) => {
-    // Status'u normalize et (uppercase'e çevir)
     const normalizedStatus = status ? String(status).toUpperCase().trim() : '';
     
     switch (normalizedStatus) {
@@ -112,8 +109,6 @@ export default function AppointmentHistoryScreen({ navigation }) {
       case 'canceled':
         return 'İptal Edildi';
       default:
-        // Debug için
-        console.log('Bilinmeyen status:', status, 'normalized:', normalizedStatus);
         return normalizedStatus || 'Bilinmiyor';
     }
   };

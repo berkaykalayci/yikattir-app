@@ -7,9 +7,10 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusinesses } from '../../store/BusinessContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import API_BASE_URL from '../../config/api';
+import { getErrorMessage, logError } from '../../utils/errorMessages';
 
-// Şehir listesi - CitySelectionScreen'den alındı
 const CITIES = [
   { id: 1, name: 'Adana', plate: '01' },
   { id: 2, name: 'Adıyaman', plate: '02' },
@@ -100,6 +101,7 @@ const CITIES = [
 
 export default function HomeScreen({ navigation }) {
   const { businesses, loading: businessesLoading } = useBusinesses();
+  const { unreadCount } = useNotifications();
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState(null);
   const [sortBy, setSortBy] = useState('distance_desc_rating');
@@ -108,7 +110,6 @@ export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
-  // Favori durumunu kontrol et
   const checkFavoriteStatus = useCallback(async (businessId) => {
     if (!user) return false;
     try {
@@ -119,7 +120,6 @@ export default function HomeScreen({ navigation }) {
     }
   }, [user]);
 
-  // Tüm işletmelerin favori durumunu yükle
   const loadFavoriteStatuses = useCallback(async () => {
     if (!user || !businesses.length) return;
     
@@ -146,51 +146,30 @@ export default function HomeScreen({ navigation }) {
 
   const loadInitialData = async () => {
     try {
-      console.log('🚀 loadInitialData başlatıldı');
-      console.log('👤 user:', user);
-      console.log('🏙️ user?.city:', user?.city);
       
-      // Önce kullanıcının kayıtlı olduğu şehri otomatik seç
       if (user?.city) {
         const userCity = CITIES.find(city => city.name.toLowerCase() === user.city.toLowerCase());
-        console.log('🔍 CITIES listesinde aranan şehir:', user.city);
-        console.log('🔍 Bulunan şehir:', userCity);
         if (userCity) {
-          console.log('✅ Kullanıcının kayıtlı şehri otomatik seçiliyor:', user.city);
           setSelectedCity(userCity);
-        } else {
-          console.log('❌ Kullanıcının şehri CITIES listesinde bulunamadı:', user.city);
-          console.log('🔍 Mevcut şehirler:', CITIES.map(c => c.name).slice(0, 10));
         }
-      } else {
-        console.log('⚠️ user?.city yok, şehir seçimi yapılmadı');
       }
       
-      console.log('Konum izni isteniyor...');
       const { status } = await Location.requestForegroundPermissionsAsync();
-      console.log('Konum izni durumu:', status);
       
       if (status === 'granted') {
-        console.log('Konum alınıyor...');
         const cur = await Location.getCurrentPositionAsync({ 
           accuracy: Location.Accuracy.Balanced,
           timeout: 10000,
           maximumAge: 300000 // 5 dakika cache
         });
-        console.log('Konum alındı:', cur.coords);
         setLocation({ lat: cur.coords.latitude, lng: cur.coords.longitude });
-        // GPS konumu alındığında şehir seçimini temizle (GPS öncelikli)
         setSelectedCity(null);
-      } else {
-        console.log('Konum izni verilmedi, kullanıcı şehrine göre filtreleme devam ediyor');
       }
     } catch (error) {
-      console.error('Konum verileri yüklenirken hata:', error);
-      console.log('Hata durumunda kullanıcı şehrine göre filtreleme devam ediyor');
+      logError('HomeScreen', 'Konum verileri yüklenirken hata');
     }
   };
 
-  // Socket.IO: Şehir odasına katıl (sadece şehir bazlı filtreleme için)
   useEffect(() => {
     const cityName = selectedCity?.name || user?.city;
     if (!cityName) return;
@@ -218,10 +197,8 @@ export default function HomeScreen({ navigation }) {
       return 2 * R * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
     };
     const source = businesses && businesses.length ? businesses : [];
-    console.log('Mesafe hesaplanıyor, konum:', location, 'işletme sayısı:', source.length);
     return source.map((x) => {
       const distance = location ? haversine(location, { lat: x.lat, lng: x.lng }) : null;
-      console.log(`İşletme: ${x.name}, Koordinat: (${x.lat}, ${x.lng}), Mesafe: ${distance}km`);
       return { 
         ...x, 
         distanceKm: distance
@@ -229,7 +206,6 @@ export default function HomeScreen({ navigation }) {
     });
   }, [location, businesses]);
 
-  // Favori ekleme/çıkarma fonksiyonları
   const toggleFavorite = async (businessId) => {
     if (!user) {
       Alert.alert('Giriş Gerekli', 'Favorilere eklemek için giriş yapmalısınız.');
@@ -240,7 +216,6 @@ export default function HomeScreen({ navigation }) {
 
     try {
       if (isFavorite) {
-        // Favoriden çıkar
         await axios.delete(`${API_BASE_URL}/favorites/user/${user.id}/business/${businessId}`);
         setFavorites(prev => {
           const newSet = new Set(prev);
@@ -248,7 +223,6 @@ export default function HomeScreen({ navigation }) {
           return newSet;
         });
       } else {
-        // Favoriye ekle
         await axios.post(`${API_BASE_URL}/favorites`, {
           userId: user.id,
           businessId: businessId
@@ -256,39 +230,25 @@ export default function HomeScreen({ navigation }) {
         setFavorites(prev => new Set([...prev, businessId]));
       }
     } catch (error) {
-      console.error('Favori işlemi hatası:', error);
-      Alert.alert('Hata', 'Favori işlemi gerçekleştirilemedi');
+      logError('HomeScreen', 'Favori işlemi hatası');
+      Alert.alert('Hata', getErrorMessage(error) || 'Favori işlemi gerçekleştirilemedi. Lütfen tekrar deneyin.');
     }
   };
 
   const data = useMemo(() => {
     let arr = withDistance.filter((x) => x.name.toLowerCase().includes(query.toLowerCase()));
-    console.log('🔍 Filtreleme öncesi işletme sayısı:', arr.length);
-    console.log('🏙️ selectedCity:', selectedCity);
-    console.log('👤 user?.city:', user?.city);
 
-    // Şehir seçimi varsa o şehirdeki işletmeleri filtrele
     if (selectedCity) {
-      console.log('📍 Manuel şehir filtresi uygulanıyor:', selectedCity.name);
       arr = arr.filter((x) => x.city === selectedCity.name);
-      console.log('📍 Manuel şehir filtresi sonrası işletme sayısı:', arr.length);
     } else if (user?.city) {
-      // Eğer manuel şehir seçimi yoksa, kullanıcının kayıtlı olduğu şehri kullan
-      console.log('👤 Kullanıcının kayıtlı şehrine göre filtreleme:', user.city);
-      // Büyük/küçük harf duyarsız karşılaştırma
-      arr = arr.filter((x) => x.city.toLowerCase() === user.city.toLowerCase());
-      console.log('👤 Kullanıcı şehri filtresi sonrası işletme sayısı:', arr.length);
-    } else {
-      console.log('⚠️ Hiçbir şehir filtresi uygulanmadı!');
+      arr = arr.filter((x) => x.city?.toLowerCase() === user.city.toLowerCase());
     }
 
     if (sortBy === 'distance_desc_rating') {
       arr.sort((a, b) => {
-        // Önce koordinatı olanları öne al
         if (a.distanceKm === null && b.distanceKm !== null) return 1;
         if (a.distanceKm !== null && b.distanceKm === null) return -1;
         if (a.distanceKm === null && b.distanceKm === null) return b.rating - a.rating;
-        // Mesafe farkı çok küçükse rating'e göre sırala
         const distanceDiff = a.distanceKm - b.distanceKm;
         if (Math.abs(distanceDiff) < 0.1) {
           return b.rating - a.rating;
@@ -299,7 +259,6 @@ export default function HomeScreen({ navigation }) {
       arr.sort((a, b) => b.rating - a.rating);
     } else if (sortBy === 'distance_asc') {
       arr.sort((a, b) => {
-        // Önce koordinatı olanları öne al
         if (a.distanceKm === null && b.distanceKm !== null) return 1;
         if (a.distanceKm !== null && b.distanceKm === null) return -1;
         if (a.distanceKm === null && b.distanceKm === null) return 0;
@@ -309,20 +268,15 @@ export default function HomeScreen({ navigation }) {
     return arr;
   }, [withDistance, query, sortBy, selectedCity, user?.city]);
 
-  // Featured businesses - Kullanıcının şehrindeki en yüksek puanlıları al
   const featuredBusinesses = useMemo(() => {
     if (!businesses || businesses.length === 0) return [];
 
     let filteredBusinesses = businesses;
 
-    // Öncelik: manuel seçilen şehir
     if (selectedCity?.name) {
       filteredBusinesses = businesses.filter(biz => (biz.city || '').toLowerCase() === selectedCity.name.toLowerCase());
-      console.log('Öne çıkanlar için manuel şehir filtresi:', selectedCity.name, 'sayı:', filteredBusinesses.length);
     } else if (user?.city) {
-      // Manuel seçim yoksa kullanıcının şehri
       filteredBusinesses = businesses.filter(biz => (biz.city || '').toLowerCase() === user.city.toLowerCase());
-      console.log('Öne çıkanlar için kullanıcı şehri filtresi:', user.city, 'sayı:', filteredBusinesses.length);
     }
 
     return filteredBusinesses
@@ -409,7 +363,16 @@ export default function HomeScreen({ navigation }) {
           <TextInput placeholder="Oto yıkama ara..." style={styles.searchInput} value={query} onChangeText={setQuery} />
         </View>
         <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Notifications')}>
-          <Ionicons name="notifications-outline" size={22} color="#0F4C4C" />
+          <View style={styles.notificationIconContainer}>
+            <Ionicons name="notifications-outline" size={22} color="#0F4C4C" />
+            {unreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -518,6 +481,31 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', elevation: 2 },
+  notificationIconContainer: {
+    position: 'relative',
+    width: 22,
+    height: 22,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  notificationBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   searchWrap: { flex: 1, backgroundColor: 'white', borderRadius: 24, paddingHorizontal: 14, elevation: 2, height: 40, justifyContent: 'center' },
   searchInput: { flex: 1 },
   scrollView: { flex: 1 },

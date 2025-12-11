@@ -21,11 +21,9 @@ export default function AddressesScreen({ navigation }) {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/addresses/user/${user.id}`);
-      console.log('API\'den gelen adresler:', response.data);
       setAddresses(response.data);
     } catch (error) {
-      console.error('Adresler yüklenirken hata:', error);
-      // Hata durumunda boş array kullan
+      logError('$(basename "$file" .js)', 'Hata');
       setAddresses([]);
     } finally {
       setLoading(false);
@@ -35,7 +33,6 @@ export default function AddressesScreen({ navigation }) {
   const setAsDefault = async (id) => {
     try {
       await axios.patch(`${API_BASE_URL}/addresses/${id}/set-default`);
-      // Local state'i güncelle
       setAddresses(prev => 
         prev.map(address => ({
           ...address,
@@ -44,7 +41,7 @@ export default function AddressesScreen({ navigation }) {
       );
       Alert.alert('Başarılı', 'Varsayılan adres güncellendi');
     } catch (error) {
-      console.error('Varsayılan adres güncellenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Varsayılan adres güncellenemedi');
     }
   };
@@ -64,7 +61,7 @@ export default function AddressesScreen({ navigation }) {
               setAddresses(prev => prev.filter(address => address.id !== id));
               Alert.alert('Başarılı', 'Adres silindi');
             } catch (error) {
-              console.error('Adres silinirken hata:', error);
+              logError('$(basename "$file" .js)', 'Hata');
               Alert.alert('Hata', 'Adres silinemedi');
             }
           }

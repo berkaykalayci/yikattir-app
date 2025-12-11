@@ -30,21 +30,16 @@ export default function IncomeReportsScreen({ navigation }) {
 
   const loadIncomeData = async () => {
     try {
-      console.log('Gelir verileri yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
       setBusinessId(foundBusinessId);
       
-      // Randevuları API'den al
       const response = await axios.get(`${API_BASE_URL}/appointments/business/${foundBusinessId}`);
       const appointments = response.data;
       
-      console.log('API\'den gelen randevular:', appointments);
       
-      // Gelir verilerini hesapla
       const today = new Date().toISOString().split('T')[0];
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -69,7 +64,6 @@ export default function IncomeReportsScreen({ navigation }) {
       
       setIncomeData(newIncomeData);
       
-      // Son işlemleri al
       const recent = appointments
         .filter(apt => apt.status === 'COMPLETED')
         .slice(0, 10)
@@ -85,7 +79,7 @@ export default function IncomeReportsScreen({ navigation }) {
       setRecentTransactions(recent);
       
     } catch (error) {
-      console.error('Gelir verileri yüklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Gelir verileri yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);

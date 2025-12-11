@@ -90,14 +90,14 @@ router.delete('/user/:userId/delete-read', async (req, res) => {
 // Yeni bildirim oluştur
 router.post('/', async (req, res) => {
   try {
-    const { userId, type, title, body } = req.body;
+    const { userId, type, title, message, body } = req.body;
     
     const notification = await prisma.notification.create({
       data: {
         userId,
         type,
         title,
-        body
+        message: message || body || '' // message veya body kullan
       }
     });
     

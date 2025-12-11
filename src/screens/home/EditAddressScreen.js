@@ -141,12 +141,11 @@ export default function EditAddressScreen({ navigation, route }) {
         isDefault: form.isDefault
       });
       
-      console.log('Adres güncellendi:', response.data);
       Alert.alert('Başarılı', 'Adres başarıyla güncellendi', [
         { text: 'Tamam', onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
-      console.error('Adres güncellenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Adres güncellenirken bir hata oluştu');
     } finally {
       setLoading(false);

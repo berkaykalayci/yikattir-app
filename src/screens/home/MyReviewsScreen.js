@@ -21,11 +21,9 @@ export default function MyReviewsScreen({ navigation }) {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/reviews/user/${user.id}`);
-      console.log('API\'den gelen değerlendirmeler:', response.data);
       setReviews(response.data);
     } catch (error) {
-      console.error('Değerlendirmeler yüklenirken hata:', error);
-      // Hata durumunda boş array kullan
+      logError('$(basename "$file" .js)', 'Hata');
       setReviews([]);
     } finally {
       setLoading(false);
@@ -61,7 +59,7 @@ export default function MyReviewsScreen({ navigation }) {
               setReviews(prev => prev.filter(review => review.id !== id));
               Alert.alert('Başarılı', 'Değerlendirme silindi');
             } catch (error) {
-              console.error('Değerlendirme silinirken hata:', error);
+              logError('$(basename "$file" .js)', 'Hata');
               Alert.alert('Hata', 'Değerlendirme silinemedi');
             }
           }

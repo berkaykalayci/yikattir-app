@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { getErrorMessage, logError } from '../../utils/errorMessages';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -35,12 +36,10 @@ export default function BookingScreen({ navigation, route }) {
     });
   };
 
-  // Tarih sınırları
   const today = new Date();
   const maxDate = new Date();
   maxDate.setDate(today.getDate() + 30); // Maksimum 30 gün sonrası
 
-  // Tarih seçimi için hazır tarihler
   const getAvailableDates = () => {
     const dates = [];
     for (let i = 0; i < 14; i++) { // Sadece 2 hafta göster
@@ -53,12 +52,10 @@ export default function BookingScreen({ navigation, route }) {
 
   const availableDates = getAvailableDates();
 
-  // Toplam fiyat hesaplama
   const calculateTotalPrice = () => {
     return selectedServices.reduce((total, service) => total + service.price, 0);
   };
 
-  // Hizmet seçimi toggle fonksiyonu
   const toggleService = (service) => {
     setSelectedServices(prev => {
       const isSelected = prev.some(s => s.id === service.id);
@@ -82,7 +79,6 @@ export default function BookingScreen({ navigation, route }) {
     }
   }, [business?.id, selectedDate]);
 
-  // Socket.IO: İşletme odasına katıl ve slot invalidation dinle
   useEffect(() => {
     if (!business?.id) return;
     const socket = io(API_BASE_URL, { transports: ['websocket'], forceNew: true });
@@ -90,7 +86,6 @@ export default function BookingScreen({ navigation, route }) {
       socket.emit('join:business', business.id);
     });
     socket.on('slots:invalidate', (payload) => {
-      // Sadece seçili tarih etkilendiyse yenile
       if (!payload?.date) return;
       const selectedDateStr = formatDateParam(selectedDate);
       const payloadDateStr = formatDateParam(new Date(payload.date));
@@ -115,8 +110,8 @@ export default function BookingScreen({ navigation, route }) {
       const response = await axios.get(`${API_BASE_URL}/businesses/${business.id}`);
       setServices(response.data.services || []);
     } catch (error) {
-      console.error('Hizmetler yüklenirken hata:', error);
-      Alert.alert('Hata', 'Hizmetler yüklenemedi');
+      logError('BookingScreen', 'Hizmetler yüklenirken hata');
+      Alert.alert('Hata', getErrorMessage(error) || 'Hizmetler yüklenemedi. Lütfen tekrar deneyin.');
     }
   };
 
@@ -129,8 +124,8 @@ export default function BookingScreen({ navigation, route }) {
       const resp = await axios.get(url);
       setSlots(resp.data.slots || []);
     } catch (error) {
-      console.error('Slotlar yüklenirken hata:', error);
-      Alert.alert('Hata', 'Uygun saatler getirilemedi');
+      logError('BookingScreen', 'Slotlar yüklenirken hata');
+      Alert.alert('Hata', getErrorMessage(error) || 'Uygun saatler getirilemedi. Lütfen tekrar deneyin.');
       setSlots([]);
     } finally {
       setLoadingSlots(false);
@@ -155,11 +150,9 @@ export default function BookingScreen({ navigation, route }) {
         return;
       }
       
-      // Türkiye saatine göre tarih al
       const turkishDate = new Date(selectedDate.getTime() + (3 * 60 * 60 * 1000)); // UTC+3
       const dateString = turkishDate.toISOString().split('T')[0];
       
-      // İlk hizmeti ana hizmet olarak kullan (backend uyumluluğu için)
       const primaryService = selectedServices[0];
       
       const appointmentData = {
@@ -186,9 +179,8 @@ export default function BookingScreen({ navigation, route }) {
         appointment: response.data
       });
     } catch (error) {
-      console.error('Randevu oluşturma hatası:', error);
-      const errorMessage = error.response?.data?.error || 'Randevu oluşturulamadı';
-      Alert.alert('Hata', errorMessage);
+      logError('BookingScreen', 'Randevu oluşturma hatası');
+      Alert.alert('Hata', getErrorMessage(error) || 'Randevu oluşturulamadı. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }

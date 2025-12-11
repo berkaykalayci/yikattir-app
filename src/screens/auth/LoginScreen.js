@@ -22,8 +22,6 @@ export default function LoginScreen({ navigation }) {
     setLoading(false);
 
     if (result.success) {
-      // Başarılı giriş - AuthContext state değişikliği RootNavigation'ı otomatik güncelleyecek
-      // navigation.reset gerekmez
     } else {
       Alert.alert('Giriş Hatası', result.error);
     }

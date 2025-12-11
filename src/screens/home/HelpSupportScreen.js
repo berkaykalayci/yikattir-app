@@ -20,7 +20,6 @@ export default function HelpSupportScreen({ navigation }) {
   };
 
   const handleWhatsApp = () => {
-    // Türkiye numara örneği, gerekirse düzenleyin
     openLink('https://wa.me/905551112233');
   };
 

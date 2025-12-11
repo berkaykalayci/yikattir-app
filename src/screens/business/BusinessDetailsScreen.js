@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 
 
 export default function BusinessDetailsScreen({ navigation }) {
@@ -37,28 +38,23 @@ export default function BusinessDetailsScreen({ navigation }) {
 
   const loadBusinessDetails = async () => {
     try {
-      console.log('İşletme detayları yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
       setBusinessId(foundBusinessId);
       
-      // İşletme bilgilerini API'den al
       const response = await axios.get(`${API_BASE_URL}/businesses/profile/${foundBusinessId}`);
       const businessData = response.data;
       
-      console.log('API\'den gelen işletme detayları:', businessData);
       
-      // Form alanlarını doldur
       setBusinessName(businessData.name || '');
       setBusinessType(businessData.type || 'OTO_YIKAMA');
       setDescription(businessData.description || '');
       setWebsite(businessData.website || '');
       
     } catch (error) {
-      console.error('İşletme detayları yüklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'İşletme bilgileri yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -79,7 +75,6 @@ export default function BusinessDetailsScreen({ navigation }) {
         website: website
       };
 
-      console.log('Güncellenecek veri:', updateData);
       
       await axios.patch(`${API_BASE_URL}/businesses/${businessId}`, updateData);
       
@@ -87,7 +82,7 @@ export default function BusinessDetailsScreen({ navigation }) {
       setIsEditing(false);
       
     } catch (error) {
-      console.error('İşletme güncelleme hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'İşletme bilgileri güncellenirken bir hata oluştu');
     }
   };

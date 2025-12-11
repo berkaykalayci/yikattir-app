@@ -41,14 +41,12 @@ export default function RootNavigation() {
       }}
     >
       {isAuthenticated ? (
-        // Kullanıcı giriş yapmışsa role göre uygulamayı göster
         user?.role === 'BUSINESS' ? (
           <Stack.Screen name="BusinessHome" component={BusinessStack} />
         ) : (
           <Stack.Screen name="MainApp" component={HomeTabs} />
         )
       ) : (
-        // Kullanıcı giriş yapmamışsa auth ekranlarını göster
         <>
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />

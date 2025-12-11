@@ -101,7 +101,6 @@ export default function AppointmentDetailScreen({ navigation, route }) {
           <TouchableOpacity 
             style={styles.businessButton}
             onPress={() => {
-              // Root navigation'a erişim - ProfileStack -> HomeTabs -> RootNavigation
               const rootNavigation = navigation.getParent()?.getParent()?.getParent();
               if (rootNavigation) {
                 rootNavigation.navigate('Home', {

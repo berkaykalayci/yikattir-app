@@ -95,28 +95,23 @@ export default function BusinessAddressScreen({ navigation }) {
 
   const loadBusinessAddress = async () => {
     try {
-      console.log('İşletme adres bilgileri yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
       setBusinessId(foundBusinessId);
       
-      // İşletme bilgilerini API'den al
       const response = await axios.get(`${API_BASE_URL}/businesses/profile/${foundBusinessId}`);
       const businessData = response.data;
       
-      console.log('API\'den gelen işletme adres bilgileri:', businessData);
       
-      // Form alanlarını doldur
       setAddress(businessData.address || '');
       setDistrict(businessData.district || '');
       setCity(businessData.city || '');
       setPostalCode(businessData.postalCode || '');
       
     } catch (error) {
-      console.error('İşletme adres bilgileri yüklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Adres bilgileri yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -137,7 +132,6 @@ export default function BusinessAddressScreen({ navigation }) {
         postalCode: postalCode
       };
 
-      console.log('Güncellenecek adres verisi:', updateData);
       
       await axios.patch(`${API_BASE_URL}/businesses/${businessId}`, updateData);
       
@@ -145,7 +139,7 @@ export default function BusinessAddressScreen({ navigation }) {
       setIsEditing(false);
       
     } catch (error) {
-      console.error('Adres güncelleme hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Adres bilgileri güncellenirken bir hata oluştu');
     }
   };

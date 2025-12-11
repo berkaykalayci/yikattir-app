@@ -6,17 +6,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import io from 'socket.io-client';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 
 export default function BusinessHomeScreen({ navigation }) {
-  console.log('=== BusinessHomeScreen MOUNT OLDU ===');
-  
   const insets = useSafeAreaInsets();
   const { user, loading: authLoading } = useAuth();
-
-  console.log('BusinessHomeScreen render edildi, user:', user);
-  console.log('User ID:', user?.id);
-  console.log('User Role:', user?.role);
-  console.log('Auth Loading:', authLoading);
   
   const [loading, setLoading] = useState(true);
   const [business, setBusiness] = useState(null);
@@ -34,18 +28,11 @@ export default function BusinessHomeScreen({ navigation }) {
   ];
 
   useEffect(() => {
-    console.log('=== useEffect ÇALIŞTI ===');
-    console.log('User:', user);
-    
     if (user) {
-      console.log('User var, loadBusinessData çağrılıyor');
       loadBusinessData();
-    } else {
-      console.log('User yok');
     }
   }, []);
 
-  // Socket.IO: işletme odasına katıl ve randevu olaylarını dinle
   useEffect(() => {
     if (!businessId) return;
     const socket = io(API_BASE_URL, { transports: ['websocket'], forceNew: true });
@@ -54,7 +41,6 @@ export default function BusinessHomeScreen({ navigation }) {
       socket.emit('join:business', businessId);
     });
     socket.on('appointment:created', (payload) => {
-      // Yeni pending randevuyu listeye en üste ekle
       setPendingAppointments((prev) => [{
         id: payload.id,
         customerName: payload.customerName || 'Müşteri',
@@ -65,10 +51,8 @@ export default function BusinessHomeScreen({ navigation }) {
       }, ...prev]);
     });
     socket.on('appointment:updated', (payload) => {
-      // Eğer CONFIRMED olduysa upcoming’a ekle; CANCELLED/COMPLETED ise listelerden çıkar
       setPendingAppointments((prev) => prev.filter(p => p.id !== payload.id));
       setUpcomingAppointments((prev) => {
-        // payload.status'a göre ekle/çıkar
         if (payload.status === 'CONFIRMED') {
           const exists = prev.some(p => p.id === payload.id);
           if (exists) return prev;
@@ -79,17 +63,14 @@ export default function BusinessHomeScreen({ navigation }) {
             time: payload.time,
             date: payload.date,
           }];
-          // Zaman yaklaşımına göre sırala
           const toDateTime = (d, t) => new Date(`${d}T${t}:00`).getTime();
           const nowTs = Date.now();
           return added.sort((a, b) => (toDateTime(a.date, a.time) - nowTs) - (toDateTime(b.date, b.time) - nowTs));
         }
-        // CONFIRMED dışındaki durumlarda varsa çıkar
         return prev.filter(p => p.id !== payload.id);
       });
     });
     socket.on('stats:invalidate', () => {
-      // İstatistikleri yenile
       loadStats(businessId);
     });
     return () => {
@@ -99,33 +80,20 @@ export default function BusinessHomeScreen({ navigation }) {
 
   const loadBusinessData = async () => {
     try {
-      console.log('İşletme verileri yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
-      console.log('İşletme ID aranıyor, userId:', user.id);
-      console.log('API URL:', `${API_BASE_URL}/businesses/owner/${user.id}`);
-      
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
-      console.log('Business ID response:', businessIdResponse.data);
-      
       const foundBusinessId = businessIdResponse.data.id;
-      console.log('Bulunan işletme ID:', foundBusinessId);
       setBusinessId(foundBusinessId);
       
-      // İşletme bilgilerini yükle
       await loadBusinessInfo(foundBusinessId);
       
-      // İstatistikleri yükle
       await loadStats(foundBusinessId);
       
-      // Randevuları yükle
       await loadAppointments(foundBusinessId);
       
     } catch (error) {
-      console.error('İşletme verileri yüklenirken hata:', error);
-      console.error('Error details:', error.response?.data);
-      console.error('Error status:', error.response?.status);
+      logError('BusinessHomeScreen', 'İşletme verileri yüklenirken hata');
     } finally {
       setLoading(false);
     }
@@ -137,19 +105,15 @@ export default function BusinessHomeScreen({ navigation }) {
       setBusinessId(response.data.id);
       return response.data.id;
     } catch (error) {
-      console.error('İşletme ID bulunurken hata:', error);
+      logError('BusinessHomeScreen', 'İşletme ID bulunurken hata');
       return null;
     }
   };
 
   const loadBusinessInfo = async (businessIdParam = businessId) => {
     try {
-      console.log('İşletme bilgileri yükleniyor, businessId:', businessIdParam);
-      // İşletme bilgilerini API'den al
       const response = await axios.get(`${API_BASE_URL}/businesses/profile/${businessIdParam}`);
       const businessData = response.data;
-      
-      console.log('API\'den gelen işletme verisi:', businessData);
       
       const businessInfo = {
         name: businessData.name || 'İşletme Adı',
@@ -158,12 +122,9 @@ export default function BusinessHomeScreen({ navigation }) {
         hours: getWorkingHours(businessData.workingHours),
         isOpen: businessData.isOpen
       };
-      
-      console.log('Set edilecek işletme bilgisi:', businessInfo);
       setBusiness(businessInfo);
     } catch (error) {
-      console.error('İşletme bilgileri yüklenirken hata:', error);
-      // Fallback veriler
+      logError('BusinessHomeScreen', 'İşletme bilgileri yüklenirken hata');
       setBusiness({
         name: user.name || 'İşletme Adı',
         email: user.email || 'email@example.com',
@@ -175,70 +136,54 @@ export default function BusinessHomeScreen({ navigation }) {
   };
 
   const getWorkingHours = (workingHours) => {
-    console.log('getWorkingHours çağrıldı, workingHours:', workingHours);
-    
     if (!workingHours || workingHours.length === 0) {
-      console.log('Working hours boş, varsayılan döndürülüyor');
       return '09:00 - 18:00';
     }
     
     const today = new Date().getDay(); // 0=Sunday, 1=Monday, etc.
-    console.log('Bugünün günü:', today);
     const dayOfWeek = today === 0 ? 7 : today;
-    console.log('Aranan dayOfWeek:', dayOfWeek);
     
     const todayHours = workingHours.find(wh => wh.dayOfWeek === dayOfWeek);
-    console.log('Bulunan bugünkü saatler:', todayHours);
     
     if (todayHours && todayHours.isOpen) {
       const hours = `${todayHours.openTime} - ${todayHours.closeTime}`;
-      console.log('Açık saatler:', hours);
       return hours;
     }
-    
-    console.log('Kapalı döndürülüyor');
     return 'Kapalı';
   };
 
   const handleApproveAppointment = async (appointmentId) => {
     try {
-      console.log('Randevu onaylanıyor:', appointmentId);
       const response = await axios.patch(`${API_BASE_URL}/appointments/${appointmentId}/status`, {
         status: 'CONFIRMED'
       });
-      console.log('Randevu onaylandı:', response.data);
       
-      // Randevuları yeniden yükle
       await loadAppointments(businessId);
       
       Alert.alert('Başarılı', 'Randevu onaylandı');
     } catch (error) {
-      console.error('Randevu onaylama hatası:', error);
+      logError('BusinessHomeScreen', 'Randevu onaylama hatası');
       Alert.alert('Hata', 'Randevu onaylanamadı');
     }
   };
 
   const handleRejectAppointment = async (appointmentId) => {
     try {
-      console.log('Randevu reddediliyor:', appointmentId);
       const response = await axios.patch(`${API_BASE_URL}/appointments/${appointmentId}/status`, {
         status: 'CANCELLED'
       });
-      console.log('Randevu reddedildi:', response.data);
       
-      // Randevuları yeniden yükle
       await loadAppointments(businessId);
       
       Alert.alert('Başarılı', 'Randevu reddedildi');
     } catch (error) {
-      console.error('Randevu reddetme hatası:', error);
+      logError('BusinessHomeScreen', 'Randevu reddetme hatası');
       Alert.alert('Hata', 'Randevu reddedilemedi');
     }
   };
 
   const loadStats = async (businessIdParam = businessId) => {
     try {
-      // İstatistikleri API'den al
       const response = await axios.get(`${API_BASE_URL}/businesses/stats/${businessIdParam}`);
       const statsData = response.data;
       
@@ -269,8 +214,7 @@ export default function BusinessHomeScreen({ navigation }) {
         },
       ]);
     } catch (error) {
-      console.error('İstatistikler yüklenirken hata:', error);
-      // Fallback veriler
+      logError('BusinessHomeScreen', 'İstatistikler yüklenirken hata');
       setStats([
         { label: 'Bugünkü Randevular', value: '0', icon: 'calendar', color: '#0F4C4C' },
         { label: 'Bu Ay Gelir', value: '₺0', icon: 'cash', color: '#10b981' },
@@ -282,15 +226,10 @@ export default function BusinessHomeScreen({ navigation }) {
 
   const loadAppointments = async (businessIdParam = businessId) => {
     try {
-      console.log('loadAppointments başladı, businessIdParam:', businessIdParam);
-      // Tüm randevuları API'den al (tarih filtresi olmadan)
       const url = `${API_BASE_URL}/appointments/business/${businessIdParam}`;
-      console.log('Randevular API URL:', url);
       const response = await axios.get(url);
       const appointments = response.data;
-      console.log('API\'den gelen randevular:', appointments);
       
-      // Yaklaşan randevular (CONFIRMED durumundaki gelecek tarihli)
       const now = new Date();
       const today = now.toISOString().split('T')[0];
       
@@ -314,7 +253,6 @@ export default function BusinessHomeScreen({ navigation }) {
       
       setUpcomingAppointments(upcoming);
 
-      // Onay bekleyen randevular (PENDING durumundaki gelecek tarihli)
       const pending = appointments
         .filter(apt => apt.status === 'PENDING' && apt.date >= today)
         .map(apt => ({
@@ -329,8 +267,7 @@ export default function BusinessHomeScreen({ navigation }) {
       
       setPendingAppointments(pending);
     } catch (error) {
-      console.error('Randevular yüklenirken hata:', error);
-      // Fallback veriler
+      logError('BusinessHomeScreen', 'Randevular yüklenirken hata');
       setUpcomingAppointments([]);
       setPendingAppointments([]);
     }
@@ -401,7 +338,6 @@ export default function BusinessHomeScreen({ navigation }) {
                   </View>
                   <Text numberOfLines={1} style={styles.upcomingCustomerCompact}>{appointment.customerName}</Text>
                   {(() => {
-                    // selectedServices JSON string olarak gelebilir, parse et
                     let services = appointment.selectedServices;
                     if (typeof services === 'string') {
                       try {
@@ -484,7 +420,6 @@ export default function BusinessHomeScreen({ navigation }) {
                   <View style={styles.pendingDetails}>
                     <Text style={styles.pendingCustomer}>{appointment.customerName}</Text>
                     {(() => {
-                      // selectedServices JSON string olarak gelebilir, parse et
                       let services = appointment.selectedServices;
                       if (typeof services === 'string') {
                         try {
@@ -726,7 +661,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
   },
-  // Yaklaşan randevular (sade, bilgi amaçlı)
   upcomingSection: {
     marginTop: 20,
     marginBottom: 8,
@@ -824,7 +758,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
   },
-  // Onay bekleyen randevular (işlem yapılabilir)
   pendingList: {
     gap: 12,
   },

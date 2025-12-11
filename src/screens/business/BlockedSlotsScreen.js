@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 
 export default function BlockedSlotsScreen({ navigation }) {
   const { user, token } = useAuth();
@@ -39,7 +40,6 @@ export default function BlockedSlotsScreen({ navigation }) {
 
   const loadBusinessId = async () => {
     try {
-      // İşletme sahibinin business ID'sini almak için auth profile endpoint'ini kullan
       const response = await axios.get(`${API_BASE_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -47,10 +47,10 @@ export default function BlockedSlotsScreen({ navigation }) {
       if (response.data.businesses && response.data.businesses.length > 0) {
         setBusinessId(response.data.businesses[0].id);
       } else {
-        console.error('Kullanıcının işletmesi bulunamadı');
+        logError('BlockedSlotsScreen', 'Kullanıcının işletmesi bulunamadı');
       }
     } catch (error) {
-      console.error('İşletme ID yüklenirken hata:', error);
+      logError('BlockedSlotsScreen', 'İşletme ID yüklenirken hata');
     }
   };
 
@@ -62,7 +62,7 @@ export default function BlockedSlotsScreen({ navigation }) {
       });
       setBlockedSlots(response.data);
     } catch (error) {
-      console.error('Engellenmiş saatler yüklenirken hata:', error);
+      logError('BlockedSlotsScreen', 'Engellenmiş saatler yüklenirken hata');
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,6 @@ export default function BlockedSlotsScreen({ navigation }) {
     }
 
     try {
-      // Her seçilen saat için ayrı ayrı engelleme oluştur
       const promises = selectedTimes.map(time => 
         axios.post(`${API_BASE_URL}/blocked-slots/business/${businessId}`, {
           date: selectedDate,
@@ -95,7 +94,7 @@ export default function BlockedSlotsScreen({ navigation }) {
       loadBlockedSlots();
       Alert.alert('Başarılı', `${selectedTimes.length} saat başarıyla engellendi`);
     } catch (error) {
-      console.error('Saat engellenirken hata:', error);
+      logError('BlockedSlotsScreen', 'Saat engellenirken hata');
       Alert.alert('Hata', error.response?.data?.error || 'Saatler engellenemedi');
     }
   };
@@ -117,7 +116,7 @@ export default function BlockedSlotsScreen({ navigation }) {
               loadBlockedSlots();
               Alert.alert('Başarılı', 'Saat engeli kaldırıldı');
             } catch (error) {
-              console.error('Saat engeli kaldırılırken hata:', error);
+              logError('BlockedSlotsScreen', 'Saat engeli kaldırılırken hata');
               Alert.alert('Hata', 'Saat engeli kaldırılamadı');
             }
           }

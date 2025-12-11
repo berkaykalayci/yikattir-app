@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { logError, getErrorMessage } from '../../utils/errorMessages';
 
 
 export default function RateAppointmentScreen({ navigation, route, onSuccess }) {
@@ -70,16 +71,7 @@ export default function RateAppointmentScreen({ navigation, route, onSuccess }) 
         comment: comment.trim() || null
       };
       
-      console.log('Gönderilen veri:', requestData);
-      console.log('Appointment bilgisi:', appointment);
-      console.log('Appointment ID:', appointment?.id);
-      console.log('Appointment status:', appointment?.status);
-      console.log('Rating:', rating);
-      console.log('Comment:', comment);
-      
       const response = await axios.post(`${API_BASE_URL}/reviews`, requestData);
-
-      console.log('Review oluşturuldu:', response.data);
       
       Alert.alert(
         'Değerlendirme Gönderildi',
@@ -95,18 +87,9 @@ export default function RateAppointmentScreen({ navigation, route, onSuccess }) 
         ]
       );
     } catch (error) {
-      console.error('Review oluşturma hatası:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      
-      let errorMessage = 'Değerlendirme gönderilemedi';
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-      
-      Alert.alert('Hata', `${errorMessage}\n\nStatus: ${error.response?.status}`);
+      logError('RateAppointmentScreen', 'Review oluşturma hatası');
+      const errorMessage = getErrorMessage(error);
+      Alert.alert('Hata', errorMessage);
     } finally {
       setLoading(false);
     }

@@ -40,7 +40,6 @@ export default function HomeTabs() {
           else if (route.name === 'Search') iconName = 'search';
           else if (route.name === 'Favorites') iconName = 'heart-outline';
           else if (route.name === 'Profile') iconName = 'person-outline';
-          // Orta sekme özel render
           if (route.name === 'Search') {
             return (
               <View style={{

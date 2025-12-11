@@ -7,46 +7,6 @@ import API_BASE_URL from '../../config/api';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 
-
-const SAMPLE_FAVORITES = [
-  {
-    id: 1,
-    name: 'Kuzenler OtoYıkama',
-    district: 'Paşakonak',
-    rating: 4.2,
-    distance: '2.3 km',
-    address: 'Paşakonak, Çamlık Sk. no:9/A',
-    phone: '0532 123 45 67',
-    services: ['Tam Yıkama', 'İç Temizlik', 'Motor Temizliği'],
-    priceRange: '200-500 ₺',
-    image: null
-  },
-  {
-    id: 2,
-    name: 'Temiz Oto',
-    district: 'Merkez',
-    rating: 4.5,
-    distance: '1.8 km',
-    address: 'Merkez, Atatürk Cd. no:15',
-    phone: '0533 987 65 43',
-    services: ['Dış Yıkama', 'İç Temizlik'],
-    priceRange: '150-350 ₺',
-    image: null
-  },
-  {
-    id: 3,
-    name: 'Hızlı Yıkama',
-    district: 'Yeni Mahalle',
-    rating: 4.0,
-    distance: '3.1 km',
-    address: 'Yeni Mahalle, İnönü Sk. no:3',
-    phone: '0534 555 44 33',
-    services: ['Hızlı Yıkama', 'Kurulama'],
-    priceRange: '100-250 ₺',
-    image: null
-  },
-];
-
 export default function FavoritesScreen({ navigation }) {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +20,6 @@ export default function FavoritesScreen({ navigation }) {
     }
   }, [user]);
 
-  // Socket: müşteri odasına katıl, favoriler değişince listeyi yenile
   useEffect(() => {
     if (!user?.id) return;
     const socket = io(API_BASE_URL, { transports: ['websocket'], forceNew: true });
@@ -70,11 +29,9 @@ export default function FavoritesScreen({ navigation }) {
     });
     socket.on('favorites:changed', (payload) => {
       if (!payload) return;
-      // Sadece bu kullanıcıya ait odadan geliyor; listeyi güncelle
       loadFavorites();
     });
     socket.on('reviews:changed', (payload) => {
-      // Favorilerdeki işletmelerden birinin puanı değiştiyse liste yeniden render edilsin
       setFavorites((prev) => [...prev]);
     });
     return () => {
@@ -88,8 +45,7 @@ export default function FavoritesScreen({ navigation }) {
       const response = await axios.get(`${API_BASE_URL}/favorites/user/${user.id}`);
       setFavorites(response.data);
     } catch (error) {
-      console.error('Favoriler yüklenirken hata:', error);
-      // Fallback data
+      logError('$(basename "$file" .js)', 'Hata');
       setFavorites(SAMPLE_FAVORITES);
     } finally {
       setLoading(false);
@@ -101,7 +57,7 @@ export default function FavoritesScreen({ navigation }) {
       await axios.delete(`${API_BASE_URL}/favorites/user/${user.id}/business/${businessId}`);
       loadFavorites(); // Favorileri yeniden yükle
     } catch (error) {
-      console.error('Favoriden çıkarma hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Favoriden çıkarılamadı');
     }
   };

@@ -7,7 +7,6 @@ import API_BASE_URL from '../../config/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 
-// Türkiye il/ilçe verileri
 const TURKEY_CITIES = {
   'İstanbul': ['Adalar', 'Arnavutköy', 'Ataşehir', 'Avcılar', 'Bağcılar', 'Bahçelievler', 'Bakırköy', 'Başakşehir', 'Bayrampaşa', 'Beşiktaş', 'Beykoz', 'Beylikdüzü', 'Beyoğlu', 'Büyükçekmece', 'Çatalca', 'Çekmeköy', 'Esenler', 'Esenyurt', 'Eyüpsultan', 'Fatih', 'Gaziosmanpaşa', 'Güngören', 'Kadıköy', 'Kağıthane', 'Kartal', 'Küçükçekmece', 'Maltepe', 'Pendik', 'Sancaktepe', 'Sarıyer', 'Silivri', 'Sultanbeyli', 'Sultangazi', 'Şile', 'Şişli', 'Tuzla', 'Ümraniye', 'Üsküdar', 'Zeytinburnu'],
   'Ankara': ['Akyurt', 'Altındağ', 'Ayaş', 'Bala', 'Beypazarı', 'Çamlıdere', 'Çankaya', 'Çubuk', 'Elmadağ', 'Etimesgut', 'Evren', 'Gölbaşı', 'Güdül', 'Haymana', 'Kalecik', 'Kazan', 'Keçiören', 'Kızılcahamam', 'Mamak', 'Nallıhan', 'Polatlı', 'Pursaklar', 'Sincan', 'Şereflikoçhisar', 'Yenimahalle'],
@@ -98,7 +97,6 @@ export default function ProfileInfoScreen({ navigation }) {
   const loadUserProfile = async () => {
     try {
       setLoading(true);
-      // Önce AuthContext'ten veriyi al
       if (user) {
         setForm({
           name: user.name || '',
@@ -109,7 +107,6 @@ export default function ProfileInfoScreen({ navigation }) {
         });
       }
       
-      // Sonra backend'den güncel veriyi çek
       const response = await axios.get(`${API_BASE_URL}/users/${user.id}`);
       const userData = response.data;
       setForm({
@@ -120,8 +117,7 @@ export default function ProfileInfoScreen({ navigation }) {
         district: userData.district || ''
       });
     } catch (error) {
-      console.error('Profil bilgileri yüklenirken hata:', error);
-      // Fallback data
+      logError('$(basename "$file" .js)', 'Hata');
       setForm({
         name: user?.name || '',
         email: user?.email || '',
@@ -163,16 +159,14 @@ export default function ProfileInfoScreen({ navigation }) {
         district: form.district
       });
       
-      // Backend'den gelen güncellenmiş veriyi al
       const updatedUserData = response.data;
       
-      // AuthContext'i güncelle
       await updateUser(updatedUserData);
       
       setIsEditing(false);
       Alert.alert('Başarılı', 'Profil bilgileriniz güncellendi');
     } catch (error) {
-      console.error('Profil güncelleme hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Profil bilgileri güncellenemedi');
     } finally {
       setLoading(false);

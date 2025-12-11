@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 import { useAuth } from '../../contexts/AuthContext';
 
 
@@ -25,8 +26,7 @@ export default function ProfileScreen({ navigation }) {
       const response = await axios.get(`${API_BASE_URL}/users/${authUser.id}`);
       setUser(response.data);
     } catch (error) {
-      console.error('Kullanıcı profili yüklenirken hata:', error);
-      // Fallback data
+      logError('$(basename "$file" .js)', 'Hata');
       setUser({
         id: authUser.id,
         name: authUser.name,
@@ -51,7 +51,6 @@ export default function ProfileScreen({ navigation }) {
           style: 'destructive',
           onPress: async () => {
             await logout();
-            // RootNavigation otomatik olarak Welcome ekranına yönlendirecek
           }
         }
       ]

@@ -7,6 +7,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 
 export default function BusinessDetailScreen({ navigation, route }) {
   const { item: initialItem } = route.params || { item: { name: 'Kuzenler OtoYıkama', rating: 4.2, lat: 40.35, lng: 27.97 } };
@@ -25,22 +26,11 @@ export default function BusinessDetailScreen({ navigation, route }) {
   const [socketRef, setSocketRef] = useState(null);
 
   useEffect(() => {
-    console.log('BusinessDetailScreen - initialItem:', initialItem);
-    console.log('BusinessDetailScreen - initialItem.id:', initialItem.id);
-    // Eğer initialItem'da ID varsa ve geçerli bir ID ise API'den detayları çek
     if (initialItem.id && typeof initialItem.id === 'string' && !initialItem.id.startsWith('sample_')) {
-      console.log('API\'den detaylar çekiliyor...');
       loadBusinessDetails();
-    } else {
-      console.log('API\'den detaylar çekilmiyor, sebep:', {
-        hasId: !!initialItem.id,
-        isString: typeof initialItem.id === 'string',
-        notSample: !initialItem.id.startsWith('sample_')
-      });
     }
   }, [initialItem.id]);
 
-  // Socket: müşteri odasına katıl ve favori/yorum değişimlerini dinle
   useEffect(() => {
     if (!user?.id) return;
     const socket = io(API_BASE_URL, { transports: ['websocket'], forceNew: true });
@@ -65,7 +55,6 @@ export default function BusinessDetailScreen({ navigation, route }) {
     });
     socket.on('reviews:changed', (payload) => {
       if (payload?.businessId === business?.id) {
-        // Rating’i ve yorumları tazelemek için detayı yeniden yükle
         loadBusinessDetails();
       }
     });
@@ -74,7 +63,6 @@ export default function BusinessDetailScreen({ navigation, route }) {
     };
   }, [user?.id, business?.id, business?.city]);
 
-  // İsim maskeleme: "Berkay Kalayci" -> "Berkay K."
   const maskName = (fullName) => {
     if (!fullName || typeof fullName !== 'string') return 'Anonim';
     const parts = fullName.trim().split(/\s+/);
@@ -109,12 +97,10 @@ export default function BusinessDetailScreen({ navigation, route }) {
     return arr;
   };
 
-  // Sıralama/filtre değiştiğinde sayfayı resetle
   useEffect(() => {
     setReviewPage(1);
   }, [reviewSort]);
 
-  // Favori durumunu kontrol et
   useEffect(() => {
     if (user && business.id) {
       checkFavoriteStatus();
@@ -133,25 +119,16 @@ export default function BusinessDetailScreen({ navigation, route }) {
 
   const loadBusinessDetails = async () => {
     try {
-      console.log('loadBusinessDetails başladı, initialItem.id:', initialItem.id);
       setLoading(true);
       const url = `${API_BASE_URL}/businesses/${initialItem.id}`;
-      console.log('API URL:', url);
       const response = await axios.get(url);
-      console.log('API response:', response.data);
       setBusiness(response.data);
       
-      // Reviews'ları ayrı olarak set et
       if (response.data.reviews) {
         setReviews(response.data.reviews);
       }
     } catch (error) {
-      console.error('İşletme detayları yüklenirken hata:', error);
-      console.error('Hata detayları:', error.response?.data);
-      console.error('Status code:', error.response?.status);
-      console.error('İşletme ID:', initialItem.id);
-      // API hatası durumunda mevcut veriyi kullan (zaten setBusiness(initialItem) ile başlatıldı)
-      // Ek olarak fallback veriler ekleyelim
+      logError('BusinessDetailScreen', 'İşletme detayları yüklenirken hata');
       const fallbackBusiness = {
         ...initialItem,
         services: initialItem.services || [
@@ -170,7 +147,6 @@ export default function BusinessDetailScreen({ navigation, route }) {
       };
       setBusiness(fallbackBusiness);
       
-      // Fallback reviews
       setReviews([
         { id: 1, rating: 3.5, comment: 'Gayet temiz bir çalışma.', appointment: { customer: { name: 'Berat Luş' } } },
         { id: 2, rating: 4.0, comment: 'Hızlı ve özenli, tavsiye ederim.', appointment: { customer: { name: 'Ayşe K.' } } },
@@ -181,7 +157,6 @@ export default function BusinessDetailScreen({ navigation, route }) {
     }
   };
 
-  // Favori ekleme/çıkarma fonksiyonu
   const toggleFavorite = async () => {
     if (!user) {
       Alert.alert('Giriş Gerekli', 'Favorilere eklemek için giriş yapmalısınız.');
@@ -190,12 +165,10 @@ export default function BusinessDetailScreen({ navigation, route }) {
 
     try {
       if (isFavorite) {
-        // Favoriden çıkar
         await axios.delete(`${API_BASE_URL}/favorites/user/${user.id}/business/${business.id}`);
         setIsFavorite(false);
         Alert.alert('Başarılı', 'İşletme favorilerden çıkarıldı');
       } else {
-        // Favoriye ekle
         await axios.post(`${API_BASE_URL}/favorites`, {
           userId: user.id,
           businessId: business.id
@@ -204,7 +177,7 @@ export default function BusinessDetailScreen({ navigation, route }) {
         Alert.alert('Başarılı', 'İşletme favorilere eklendi');
       }
     } catch (error) {
-      console.error('Favori işlemi hatası:', error);
+      logError('BusinessDetailScreen', 'Favori işlemi hatası');
       Alert.alert('Hata', 'Favori işlemi gerçekleştirilemedi');
     }
   };
@@ -212,65 +185,39 @@ export default function BusinessDetailScreen({ navigation, route }) {
   useEffect(() => {
     (async () => {
       try {
-        console.log('Mesafe hesaplama başladı, business:', {
-          id: business?.id,
-          name: business?.name,
-          lat: business?.lat,
-          lng: business?.lng,
-          latType: typeof business?.lat,
-          lngType: typeof business?.lng
-        });
-
-        // İşletme koordinatları yoksa mesafe hesaplamayı atla
         const bizLat = business?.lat != null ? parseFloat(String(business.lat)) : null;
         const bizLng = business?.lng != null ? parseFloat(String(business.lng)) : null;
         
-        console.log('Parsed koordinatlar:', { bizLat, bizLng, isFiniteLat: isFinite(bizLat), isFiniteLng: isFinite(bizLng) });
-        
         if (!isFinite(bizLat) || !isFinite(bizLng)) {
-          console.log('Koordinatlar geçersiz, mesafe hesaplanamıyor');
           setDistanceKm(null);
           return;
         }
 
         const perm = await Location.requestForegroundPermissionsAsync();
-        console.log('Konum izni durumu:', perm.status);
         if (perm.status !== 'granted') {
-          console.log('Konum izni reddedildi');
           setDistanceKm(null);
           return;
         }
 
-        // Önce son bilinen konumu dene (anında gelir)
         let position = await Location.getLastKnownPositionAsync();
-        console.log('Son bilinen konum:', position ? 'bulundu' : 'bulunamadı');
 
         if (!position) {
-          console.log('Mevcut konum alınıyor...');
-          // 4 sn timeout ile mevcut konumu dene
           const getPos = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
           position = await Promise.race([
             getPos,
             new Promise((_, reject) => setTimeout(() => reject(new Error('loc-timeout')), 4000))
-          ]).catch((err) => {
-            console.log('Konum alınamadı:', err.message);
+          ]).catch(() => {
             return null;
           });
         }
 
         if (!position?.coords) {
-          console.log('Konum bilgisi alınamadı');
           setDistanceKm(null);
           return;
         }
 
-        console.log('Kullanıcı konumu:', {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        });
-
         const toRad = (x) => (x * Math.PI) / 180;
-        const R = 6371; // km
+        const R = 6371;
         const a = { lat: position.coords.latitude, lng: position.coords.longitude };
         const b = { lat: bizLat, lng: bizLng };
         const dLat = toRad(b.lat - a.lat);
@@ -280,10 +227,9 @@ export default function BusinessDetailScreen({ navigation, route }) {
         const s = Math.sin(dLat/2)**2 + Math.sin(dLon/2)**2 * Math.cos(lat1) * Math.cos(lat2);
         const d = 2 * R * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
         
-        console.log('Hesaplanan mesafe:', d, 'km');
         setDistanceKm(Number.isFinite(d) ? d : null);
       } catch (err) {
-        console.error('Mesafe hesaplama hatası:', err);
+        logError('BusinessDetailScreen', 'Mesafe hesaplama hatası');
         setDistanceKm(null);
       }
     })();

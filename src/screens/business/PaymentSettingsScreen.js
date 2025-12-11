@@ -14,7 +14,6 @@ export default function PaymentSettingsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [businessId, setBusinessId] = useState(null);
   
-  // Ödeme ayarları state'leri
   const [cashEnabled, setCashEnabled] = useState(true);
   const [cardEnabled, setCardEnabled] = useState(true);
   const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(false);
@@ -32,25 +31,19 @@ export default function PaymentSettingsScreen({ navigation }) {
 
   const loadPaymentSettings = async () => {
     try {
-      console.log('Ödeme ayarları yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
       setBusinessId(foundBusinessId);
       
-      // İşletme bilgilerini API'den al
       const response = await axios.get(`${API_BASE_URL}/businesses/profile/${foundBusinessId}`);
       const businessData = response.data;
       
-      console.log('API\'den gelen ödeme ayarları:', businessData);
       
-      // Form alanlarını doldur (şimdilik varsayılan değerler kullanıyoruz)
-      // Gelecekte API'den bu ayarları alabiliriz
       
     } catch (error) {
-      console.error('Ödeme ayarları yüklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Ödeme ayarları yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -75,14 +68,13 @@ export default function PaymentSettingsScreen({ navigation }) {
         minPaymentAmount
       };
 
-      console.log('Güncellenecek ödeme ayarları:', settingsData);
       
       await axios.patch(`${API_BASE_URL}/businesses/${businessId}`, settingsData);
       
       Alert.alert('Başarılı', 'Ödeme ayarları güncellendi');
       
     } catch (error) {
-      console.error('Ödeme ayarları güncelleme hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Ödeme ayarları güncellenirken bir hata oluştu');
     }
   };

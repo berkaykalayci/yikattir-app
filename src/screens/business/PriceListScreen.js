@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 
 
 export default function PriceListScreen({ navigation }) {
@@ -24,34 +25,22 @@ export default function PriceListScreen({ navigation }) {
 
   const loadServices = async () => {
     try {
-      console.log('PriceListScreen: Hizmetler yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
-      console.log('PriceListScreen: İşletme ID aranıyor, userId:', user.id);
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
-      console.log('PriceListScreen: Bulunan işletme ID:', foundBusinessId);
       setBusinessId(foundBusinessId);
       
-      // Hizmetleri API'den al
       const servicesUrl = `${API_BASE_URL}/services/business/${foundBusinessId}`;
-      console.log('PriceListScreen: Hizmetler API URL:', servicesUrl);
       const response = await axios.get(servicesUrl);
       const servicesData = response.data;
-      
-      console.log('PriceListScreen: API\'den gelen hizmetler:', servicesData);
       
       setServices(servicesData);
       
     } catch (error) {
-      console.error('PriceListScreen: Hizmetler yüklenirken hata:', error);
-      console.error('PriceListScreen: Error response:', error.response?.data);
-      console.error('PriceListScreen: Error status:', error.response?.status);
+      logError('PriceListScreen', 'Hizmetler yüklenirken hata');
       
-      // Eğer işletme bulunamadıysa veya 404 hatası varsa, boş liste göster
       if (error.response?.status === 404) {
-        console.log('PriceListScreen: İşletme bulunamadı, boş liste gösteriliyor');
         setServices([]);
       } else {
         Alert.alert('Hata', `Hizmetler yüklenirken bir hata oluştu: ${error.response?.status}`);

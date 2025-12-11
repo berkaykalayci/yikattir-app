@@ -22,13 +22,11 @@ export default function BusinessLoginScreen({ navigation }) {
       const result = await login(email.trim(), password.trim(), 'BUSINESS');
       
       if (result.success) {
-        // AuthContext state değişikliği RootNavigation'ı otomatik güncelleyecek
-        // navigation.replace gerekmez
       } else {
         Alert.alert('Giriş Hatası', result.error);
       }
     } catch (error) {
-      console.error('İşletme giriş hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Giriş işlemi başarısız');
     } finally {
       setLoading(false);

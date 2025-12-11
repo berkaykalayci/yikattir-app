@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 
 // Kullanıcı kayıt
 router.post('/register', async (req, res) => {
-  const { name, email, phone, password, city, district, address, role = 'CUSTOMER' } = req.body;
+  const { name, email, phone, password, city, district, address, tcNo, vergiNo, role = 'CUSTOMER' } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'E-posta ve şifre zorunludur.' });
@@ -30,6 +30,22 @@ router.post('/register', async (req, res) => {
       }
     }
 
+    // TC Kimlik No kontrolü (varsa ve BUSINESS rolünde)
+    if (tcNo && role === 'BUSINESS') {
+      const existingTCNo = await prisma.user.findUnique({ where: { tcNo } });
+      if (existingTCNo) {
+        return res.status(400).json({ error: 'Bu T.C. Kimlik No zaten kullanılıyor.' });
+      }
+    }
+
+    // Vergi No kontrolü (varsa ve BUSINESS rolünde)
+    if (vergiNo && role === 'BUSINESS') {
+      const existingVergiNo = await prisma.user.findUnique({ where: { vergiNo } });
+      if (existingVergiNo) {
+        return res.status(400).json({ error: 'Bu Vergi No zaten kullanılıyor.' });
+      }
+    }
+
     // Şifreyi hashle
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -42,6 +58,8 @@ router.post('/register', async (req, res) => {
         password: hashedPassword,
         city,
         district,
+        tcNo: tcNo || null,
+        vergiNo: vergiNo || null,
         role,
       },
     });

@@ -24,17 +24,13 @@ export default function AddCardScreen({ navigation }) {
   };
 
   const formatCardNumber = (text) => {
-    // Sadece rakamları al
     const cleaned = text.replace(/\D/g, '');
-    // 4'erli gruplar halinde formatla
     const formatted = cleaned.replace(/(\d{4})(?=\d)/g, '$1 ');
     return formatted;
   };
 
   const formatExpiryDate = (text) => {
-    // Sadece rakamları al
     const cleaned = text.replace(/\D/g, '');
-    // MM/YY formatında
     if (cleaned.length >= 2) {
       return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
     }
@@ -81,7 +77,7 @@ export default function AddCardScreen({ navigation }) {
         { text: 'Tamam', onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
-      console.error('Kart eklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', error.response?.data?.error || 'Kart eklenemedi');
     } finally {
       setSaving(false);

@@ -32,7 +32,7 @@ export default function BusinessImageSettingsScreen({ navigation }) {
         setImageUrl(profile.data?.imageUrl || '');
       }
     } catch (e) {
-      console.error('İşletme yüklenirken hata:', e);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'İşletme bilgisi alınamadı');
     } finally {
       setLoading(false);
@@ -52,8 +52,6 @@ export default function BusinessImageSettingsScreen({ navigation }) {
     });
     if (!result.canceled && result.assets?.length) {
       const localUri = result.assets[0].uri;
-      // Not: Şu an sunucuda dosya upload yok, bu yüzden local URI’yi doğrudan kaydetmek yerine
-      // geçici olarak URL alanına yazıyoruz. Harici barındırılan URL tercih edilir.
       setImageUrl(localUri);
       Alert.alert('Bilgi', 'Yerel görsel seçildi. URL alanına yazıldı. Dosya yükleme eklenirse doğrudan yüklenecek.');
     }
@@ -61,15 +59,12 @@ export default function BusinessImageSettingsScreen({ navigation }) {
 
   const saveImageUrl = async () => {
     if (!businessId) {
-      console.log('saveImageUrl: businessId yok, işlem iptal');
       Alert.alert('Bilgi', 'İşletme bilgisi yüklenmeden kaydedilemez');
       return;
     }
     try {
       setSaving(true);
-      // Eğer alan yerel dosya URI ise upload et; değilse URL güncelle
       if (imageUrl && imageUrl.startsWith('file://')) {
-        console.log('saveImageUrl: upload akışı, businessId=', businessId, 'imageUrl=', imageUrl);
         const formData = new FormData();
         formData.append('image', {
           uri: imageUrl,
@@ -85,7 +80,6 @@ export default function BusinessImageSettingsScreen({ navigation }) {
         setImageUrl(res.data?.imageUrl || imageUrl);
         Alert.alert('Başarılı', 'Görsel yüklendi');
       } else {
-        console.log('saveImageUrl: URL güncelleme akışı, businessId=', businessId, 'imageUrl=', imageUrl);
         await axios.put(`${API_BASE_URL}/businesses/${businessId}/image`, { imageUrl }, {
           headers: {
             Authorization: `Bearer ${user?.token}`,
@@ -95,7 +89,7 @@ export default function BusinessImageSettingsScreen({ navigation }) {
       }
       navigation.goBack();
     } catch (e) {
-      console.error('Görsel kaydedilirken hata:', e);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Görsel kaydedilemedi');
     } finally {
       setSaving(false);
@@ -114,7 +108,7 @@ export default function BusinessImageSettingsScreen({ navigation }) {
       setImageUrl('');
       Alert.alert('Başarılı', 'Görsel kaldırıldı');
     } catch (e) {
-      console.error('Görsel kaldırılırken hata:', e);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Görsel kaldırılamadı');
     } finally {
       setSaving(false);

@@ -42,7 +42,8 @@ export default function BookingConfirmScreen({ navigation }) {
       >
         <Ionicons name="checkmark" size={80} color="white" style={styles.checkIcon} />
       </Animated.View>
-      <Text style={styles.text}>Randevunuz Onaylanmıştır</Text>
+      <Text style={styles.text}>Randevunuz İletilmiştir</Text>
+      <Text style={styles.subText}>Onay bekleniyor</Text>
       
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
@@ -87,7 +88,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 80,
   },
-  text: { color: 'white', fontSize: 18, fontWeight: '600' },
+  text: { color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  subText: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 14, fontWeight: '400' },
   buttonContainer: {
     flexDirection: 'row',
     gap: 16,

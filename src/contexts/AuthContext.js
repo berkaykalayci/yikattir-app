@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
+import { getErrorMessage, logError } from '../utils/errorMessages';
 
 const AuthContext = createContext();
 
@@ -24,7 +25,6 @@ export const AuthProvider = ({ children }) => {
 
   const loadStoredAuth = async () => {
     try {
-      // Hemen loading'i false yap, hiçbir şey bekleme
       setLoading(false);
       
       const storedToken = await AsyncStorage.getItem('authToken');
@@ -36,16 +36,13 @@ export const AuthProvider = ({ children }) => {
         userData.token = storedToken; // Token'ı user objesine ekle
         setUser(userData);
         
-        // Token'ı axios header'ına ekle
         axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
         
-        // Token kontrolünü arka planda yap, uygulamanın açılmasını engelleme
         Promise.race([
           axios.get(`${API_BASE_URL}/auth/profile`, { timeout: 2000 }),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
         ]).catch((error) => {
-          // Token geçersizse temizle (sessizce)
-          console.log('Token kontrolü başarısız, çıkış yapılıyor:', error.message);
+          logError('AuthContext', 'Token kontrolü başarısız');
           setUser(null);
           setToken(null);
           AsyncStorage.removeItem('authToken');
@@ -54,8 +51,7 @@ export const AuthProvider = ({ children }) => {
         });
       }
     } catch (error) {
-      console.error('Stored auth yükleme hatası:', error);
-      // Hata durumunda da loading'i false yap
+      logError('AuthContext', 'Stored auth yükleme hatası');
       setLoading(false);
     }
   };
@@ -70,29 +66,26 @@ export const AuthProvider = ({ children }) => {
 
       const { user: userData, token: authToken } = response.data;
 
-      // AsyncStorage'a kaydet
       await AsyncStorage.setItem('authToken', authToken);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
 
-      // State'i güncelle
       userData.token = authToken; // Token'ı user objesine ekle
       setUser(userData);
       setToken(authToken);
 
-      // Axios header'ına ekle
       axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
 
       return { success: true, user: userData };
     } catch (error) {
-      console.error('Giriş hatası:', error);
+      logError('AuthContext', 'Giriş hatası');
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Giriş yapılamadı' 
+        error: getErrorMessage(error) || 'E-posta veya şifre hatalı. Lütfen tekrar deneyin.' 
       };
     }
   };
 
-  const register = async (name, email, phone, password, city, district, role = 'CUSTOMER', address = '') => {
+  const register = async (name, email, phone, password, city, district, role = 'CUSTOMER', address = '', tcNo = '', vergiNo = '') => {
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, {
         name,
@@ -102,62 +95,56 @@ export const AuthProvider = ({ children }) => {
         city,
         district,
         address,
+        tcNo,
+        vergiNo,
         role,
       });
 
       const { user: userData, token: authToken } = response.data;
 
-      // AsyncStorage'a kaydet
       await AsyncStorage.setItem('authToken', authToken);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
 
-      // State'i güncelle
       userData.token = authToken; // Token'ı user objesine ekle
       setUser(userData);
       setToken(authToken);
 
-      // Axios header'ına ekle
       axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
 
       return { success: true, user: userData };
     } catch (error) {
-      console.error('Kayıt hatası:', error);
+      logError('AuthContext', 'Kayıt hatası');
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Kayıt olunamadı' 
+        error: getErrorMessage(error) || 'Kayıt işlemi başarısız. Lütfen bilgilerinizi kontrol edin.' 
       };
     }
   };
 
   const updateUser = async (updatedUserData) => {
     try {
-      // AsyncStorage'ı güncelle
       await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
       
-      // State'i güncelle
       setUser(updatedUserData);
       
       return { success: true };
     } catch (error) {
-      console.error('Kullanıcı güncelleme hatası:', error);
-      return { success: false, error: 'Kullanıcı güncellenemedi' };
+      logError('AuthContext', 'Kullanıcı güncelleme hatası');
+      return { success: false, error: 'Bilgileriniz güncellenemedi. Lütfen tekrar deneyin.' };
     }
   };
 
   const logout = async () => {
     try {
-      // AsyncStorage'dan temizle
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('user');
 
-      // State'i temizle
       setUser(null);
       setToken(null);
 
-      // Axios header'ından kaldır
       delete axios.defaults.headers.common['Authorization'];
     } catch (error) {
-      console.error('Çıkış hatası:', error);
+      logError('AuthContext', 'Çıkış hatası');
     }
   };
 

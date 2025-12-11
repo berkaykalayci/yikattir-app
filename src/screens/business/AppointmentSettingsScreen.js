@@ -14,7 +14,6 @@ export default function AppointmentSettingsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [businessId, setBusinessId] = useState(null);
   
-  // Randevu ayarları state'leri
   const [autoApprove, setAutoApprove] = useState(false);
   const [advanceBooking, setAdvanceBooking] = useState(true);
   const [sameDayBooking, setSameDayBooking] = useState(true);
@@ -34,25 +33,19 @@ export default function AppointmentSettingsScreen({ navigation }) {
 
   const loadAppointmentSettings = async () => {
     try {
-      console.log('Randevu ayarları yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
       setBusinessId(foundBusinessId);
       
-      // İşletme bilgilerini API'den al
       const response = await axios.get(`${API_BASE_URL}/businesses/profile/${foundBusinessId}`);
       const businessData = response.data;
       
-      console.log('API\'den gelen randevu ayarları:', businessData);
       
-      // Form alanlarını doldur (şimdilik varsayılan değerler kullanıyoruz)
-      // Gelecekte API'den bu ayarları alabiliriz
       
     } catch (error) {
-      console.error('Randevu ayarları yüklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Randevu ayarları yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -79,14 +72,13 @@ export default function AppointmentSettingsScreen({ navigation }) {
         maxDailyAppointments
       };
 
-      console.log('Güncellenecek randevu ayarları:', settingsData);
       
       await axios.patch(`${API_BASE_URL}/businesses/${businessId}`, settingsData);
       
       Alert.alert('Başarılı', 'Randevu ayarları güncellendi');
       
     } catch (error) {
-      console.error('Randevu ayarları güncelleme hatası:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Randevu ayarları güncellenirken bir hata oluştu');
     }
   };

@@ -100,17 +100,14 @@ export default function SearchScreen({ navigation }) {
   const filteredBusinesses = useMemo(() => {
     let filtered = businesses || [];
     
-    // Şehir filtresi
     if (selectedCity) {
       filtered = filtered.filter(business => business.city === selectedCity.name);
     }
     
-    // İlçe filtresi
     if (selectedDistrict) {
       filtered = filtered.filter(business => business.district === selectedDistrict);
     }
     
-    // Arama filtresi
     if (searchQuery) {
       filtered = filtered.filter(business => 
         business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { logError } from '../../utils/errorMessages';
 
 
 export default function BusinessProfileScreen({ navigation }) {
@@ -23,24 +24,14 @@ export default function BusinessProfileScreen({ navigation }) {
 
   const loadBusinessProfile = async () => {
     try {
-      console.log('İşletme profili yükleniyor, user:', user);
       setLoading(true);
       
-      // Önce işletme ID'sini bul
-      console.log('İşletme ID aranıyor, userId:', user.id);
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       const foundBusinessId = businessIdResponse.data.id;
-      console.log('Bulunan işletme ID:', foundBusinessId);
       setBusinessId(foundBusinessId);
       
-      // İşletme bilgilerini API'den al
-      console.log('İşletme bilgileri API\'den alınıyor...');
       const response = await axios.get(`${API_BASE_URL}/businesses/profile/${foundBusinessId}`);
       const businessData = response.data;
-      
-      console.log('API\'den gelen işletme verisi:', businessData);
-      console.log('Owner email:', businessData.owner?.email);
-      console.log('User email:', user.email);
       
       const businessInfo = {
         name: businessData.name || 'İşletme Adı',
@@ -57,12 +48,10 @@ export default function BusinessProfileScreen({ navigation }) {
         monthlyRevenue: businessData.monthlyRevenue || 0
       };
       
-      console.log('Set edilecek işletme bilgisi:', businessInfo);
       setBusiness(businessInfo);
       
     } catch (error) {
-      console.error('İşletme profili yüklenirken hata:', error);
-      // Fallback veriler
+      logError('BusinessProfileScreen', 'İşletme profili yüklenirken hata');
       setBusiness({
         name: user.name || 'İşletme Adı',
         email: user.email || 'email@example.com',
@@ -87,7 +76,7 @@ export default function BusinessProfileScreen({ navigation }) {
       const response = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
       setBusinessId(response.data.id);
     } catch (error) {
-      console.error('İşletme ID bulunurken hata:', error);
+      logError('BusinessProfileScreen', 'İşletme ID bulunurken hata');
     }
   };
 

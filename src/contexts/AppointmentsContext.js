@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
+import { logError } from '../utils/errorMessages';
 
 const AppointmentsContext = createContext(null);
 
@@ -16,9 +17,9 @@ export function AppointmentsProvider({ children }) {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/appointments/customer/${user.id}`);
-      setAppointments(response.data);
+      setAppointments(response.data || []);
     } catch (error) {
-      console.error('Randevular yüklenirken hata:', error);
+      logError('AppointmentsContext', 'Randevular yüklenirken hata');
       setAppointments([]);
     } finally {
       setLoading(false);

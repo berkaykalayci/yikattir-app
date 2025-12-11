@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, Text, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, TextInput, Text, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, Modal, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 
-// Türkiye il/ilçe verileri
 const TURKEY_CITIES = {
   'İstanbul': ['Adalar', 'Arnavutköy', 'Ataşehir', 'Avcılar', 'Bağcılar', 'Bahçelievler', 'Bakırköy', 'Başakşehir', 'Bayrampaşa', 'Beşiktaş', 'Beykoz', 'Beylikdüzü', 'Beyoğlu', 'Büyükçekmece', 'Çatalca', 'Çekmeköy', 'Esenler', 'Esenyurt', 'Eyüpsultan', 'Fatih', 'Gaziosmanpaşa', 'Güngören', 'Kadıköy', 'Kağıthane', 'Kartal', 'Küçükçekmece', 'Maltepe', 'Pendik', 'Sancaktepe', 'Sarıyer', 'Silivri', 'Sultanbeyli', 'Sultangazi', 'Şile', 'Şişli', 'Tuzla', 'Ümraniye', 'Üsküdar', 'Zeytinburnu'],
   'Ankara': ['Akyurt', 'Altındağ', 'Ayaş', 'Bala', 'Beypazarı', 'Çamlıdere', 'Çankaya', 'Çubuk', 'Elmadağ', 'Etimesgut', 'Evren', 'Gölbaşı', 'Güdül', 'Haymana', 'Kalecik', 'Kazan', 'Keçiören', 'Kızılcahamam', 'Mamak', 'Nallıhan', 'Polatlı', 'Pursaklar', 'Sincan', 'Şereflikoçhisar', 'Yenimahalle'],
@@ -79,11 +78,13 @@ export default function RegisterScreen({ navigation }) {
     confirm: '', 
     phone: '',
     city: '',
-    district: ''
+    district: '',
+    acceptedTerms: false
   });
   const [loading, setLoading] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const insets = useSafeAreaInsets();
   const { register } = useAuth();
 
@@ -104,14 +105,32 @@ export default function RegisterScreen({ navigation }) {
     return TURKEY_CITIES[form.city] || [];
   };
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    const cleaned = phone.replace(/\s/g, '').replace(/[()-]/g, '');
+    const turkishPhoneRegex = /^(0|90|\+90)?5[0-9]{9}$/;
+    return turkishPhoneRegex.test(cleaned);
+  };
+
   const handleRegister = async () => {
-    // Validasyon
     if (!form.name.trim()) {
       Alert.alert('Hata', 'Ad alanı zorunludur.');
       return;
     }
     if (!form.email.trim()) {
       Alert.alert('Hata', 'E-posta alanı zorunludur.');
+      return;
+    }
+    if (!validateEmail(form.email.trim())) {
+      Alert.alert('Hata', 'Geçerli bir e-posta adresi giriniz.');
+      return;
+    }
+    if (form.phone.trim() && !validatePhone(form.phone.trim())) {
+      Alert.alert('Hata', 'Geçerli bir telefon numarası giriniz. (Örn: 05XX XXX XX XX)');
       return;
     }
     if (!form.password.trim()) {
@@ -134,6 +153,10 @@ export default function RegisterScreen({ navigation }) {
       Alert.alert('Hata', 'İlçe seçimi zorunludur.');
       return;
     }
+    if (!form.acceptedTerms) {
+      Alert.alert('Hata', 'Kullanıcı sözleşmesini kabul etmelisiniz.');
+      return;
+    }
 
     setLoading(true);
     const result = await register(
@@ -151,8 +174,6 @@ export default function RegisterScreen({ navigation }) {
         {
           text: 'Tamam',
           onPress: () => {
-            // AuthContext state değişikliği RootNavigation'ı otomatik güncelleyecek
-            // navigation.reset gerekmez
           }
         }
       ]);
@@ -187,16 +208,32 @@ export default function RegisterScreen({ navigation }) {
           ['ŞİFRE', 'password', true],
           ['ŞİFRE ONAY', 'confirm', true],
           ['TELEFON', 'phone'],
-        ].map(([label, key, secure]) => (
-          <View key={key} style={{ width: '100%' }}>
-            <Text style={styles.label}>{label}</Text>
-            <TextInput 
-              style={styles.underline} 
-              secureTextEntry={!!secure} 
-              onChangeText={(t) => update(key, t)}
-            />
-          </View>
-        ))}
+        ].map(([label, key, secure]) => {
+          let keyboardType = 'default';
+          let placeholder = '';
+          let onChangeHandler = (t) => update(key, t);
+          
+          if (key === 'email') {
+            keyboardType = 'email-address';
+          } else if (key === 'phone') {
+            keyboardType = 'phone-pad';
+            placeholder = '05XX XXX XX XX';
+          }
+          
+          return (
+            <View key={key} style={{ width: '100%' }}>
+              <Text style={styles.label}>{label}</Text>
+              <TextInput 
+                style={styles.underline} 
+                secureTextEntry={!!secure} 
+                onChangeText={onChangeHandler}
+                keyboardType={keyboardType}
+                placeholder={placeholder}
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+              />
+            </View>
+          );
+        })}
 
         {/* İl Seçimi */}
         <View style={{ width: '100%' }}>
@@ -258,10 +295,32 @@ export default function RegisterScreen({ navigation }) {
             </ScrollView>
           </View>
         )}
+
+        <View style={styles.termsContainer}>
+          <TouchableOpacity 
+            style={styles.checkboxContainer}
+            onPress={() => update('acceptedTerms', !form.acceptedTerms)}
+          >
+            <View style={[styles.checkbox, form.acceptedTerms && styles.checkboxChecked]}>
+              {form.acceptedTerms && <Ionicons name="checkmark" size={16} color="white" />}
+            </View>
+            <Text style={styles.termsText}>
+              <Text style={styles.termsLink} onPress={() => setShowTermsModal(true)}>
+                Kullanıcı Sözleşmesi
+              </Text>
+              {' '}ve{' '}
+              <Text style={styles.termsLink} onPress={() => setShowTermsModal(true)}>
+                Gizlilik Politikası
+              </Text>
+              'nı okudum ve kabul ediyorum.
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity 
-          style={[styles.btn, loading && styles.btnDisabled]} 
+          style={[styles.btn, (loading || !form.acceptedTerms) && styles.btnDisabled]} 
           onPress={handleRegister}
-          disabled={loading}
+          disabled={loading || !form.acceptedTerms}
         >
           <Text style={styles.btnText}>
             {loading ? 'Kayıt yapılıyor...' : 'KAYIT OL !'}
@@ -273,6 +332,72 @@ export default function RegisterScreen({ navigation }) {
         <View style={{ height: 24 }} />
       </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={showTermsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTermsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Kullanıcı Sözleşmesi ve Gizlilik Politikası</Text>
+              <TouchableOpacity onPress={() => setShowTermsModal(false)}>
+                <Ionicons name="close" size={24} color="#0F4C4C" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.modalSectionTitle}>1. Kullanıcı Sözleşmesi</Text>
+              <Text style={styles.modalText}>
+                Bu sözleşme, YIKATTIR uygulamasını kullanarak hizmet almak isteyen kullanıcılar ile uygulama sahibi arasındaki hak ve yükümlülükleri düzenler.
+              </Text>
+              <Text style={styles.modalText}>
+                • Uygulamayı kullanarak, bu sözleşmeyi kabul etmiş sayılırsınız.{'\n'}
+                • Randevu bilgilerinizi doğru ve güncel tutmakla yükümlüsünüz.{'\n'}
+                • İptal ve değişiklik politikalarına uymakla yükümlüsünüz.{'\n'}
+                • Uygulamayı yasalara aykırı amaçlarla kullanamazsınız.
+              </Text>
+
+              <Text style={styles.modalSectionTitle}>2. Gizlilik Politikası</Text>
+              <Text style={styles.modalText}>
+                Kişisel verileriniz 6698 sayılı Kişisel Verilerin Korunması Kanunu kapsamında işlenmektedir.
+              </Text>
+              <Text style={styles.modalText}>
+                • Ad, e-posta, telefon gibi bilgileriniz randevu süreçlerinde kullanılır.{'\n'}
+                • Konum bilgileriniz sadece yakındaki işletmeleri bulmak için kullanılır.{'\n'}
+                • Verileriniz üçüncü taraflarla paylaşılmaz.{'\n'}
+                • Verilerinize erişim, düzeltme ve silme haklarınız bulunmaktadır.
+              </Text>
+              <TouchableOpacity 
+                style={styles.externalLink}
+                onPress={() => Linking.openURL('https://yikattir.com/privacy')}
+              >
+                <Ionicons name="open-outline" size={18} color="#0F4C4C" />
+                <Text style={styles.externalLinkText}>
+                  Detaylı Gizlilik Politikası için tıklayın (yikattir.com/privacy)
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.modalSectionTitle}>3. Sorumluluk</Text>
+              <Text style={styles.modalText}>
+                Uygulama, işletmeler ve hizmetler hakkında bilgi sağlar ancak hizmet kalitesinden sorumlu değildir. İşletmelerle olan anlaşmazlıklarınızı doğrudan işletme ile çözmeniz gerekmektedir.
+              </Text>
+            </ScrollView>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.modalButton}
+                onPress={() => {
+                  update('acceptedTerms', true);
+                  setShowTermsModal(false);
+                }}
+              >
+                <Text style={styles.modalButtonText}>Kabul Ediyorum</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -354,6 +479,114 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 16,
     color: '#0F4C4C',
+  },
+  termsContainer: {
+    width: '100%',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: '#10b981',
+    borderColor: '#10b981',
+  },
+  termsText: {
+    flex: 1,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  termsLink: {
+    color: '#93c5fd',
+    textDecorationLine: 'underline',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F4C4C',
+    flex: 1,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F4C4C',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  modalText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  modalFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  modalButton: {
+    backgroundColor: '#0F4C4C',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  externalLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+  },
+  externalLinkText: {
+    color: '#0F4C4C',
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
 

@@ -141,12 +141,11 @@ export default function AddAddressScreen({ navigation }) {
         isDefault: form.isDefault
       });
       
-      console.log('Adres eklendi:', response.data);
       Alert.alert('Başarılı', 'Adres başarıyla eklendi', [
         { text: 'Tamam', onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
-      console.error('Adres eklenirken hata:', error);
+      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Adres eklenirken bir hata oluştu');
     } finally {
       setLoading(false);
