@@ -86,11 +86,9 @@ router.post('/', authenticateToken, async (req, res) => {
       },
       include: {
         business: {
-          include: { owner: { include: { pushToken: true } } }
+          include: { owner: true }
         },
-        customer: {
-          include: { pushToken: true }
-        },
+        customer: true,
         service: true
       }
     });
@@ -162,9 +160,34 @@ router.get('/customer/:customerId', async (req, res) => {
     const appointments = await prisma.appointment.findMany({
       where,
       include: {
-        business: true,
-        service: true,
-        reviews: true,
+        business: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            district: true,
+            imageUrl: true,
+            logoUrl: true,
+            rating: true,
+          }
+        },
+        service: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            durationMin: true,
+            vehicleType: true,
+          }
+        },
+        reviews: {
+          select: {
+            id: true,
+            rating: true,
+            comment: true,
+          }
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -172,7 +195,7 @@ router.get('/customer/:customerId', async (req, res) => {
     res.json(appointments);
   } catch (error) {
     console.error('Randevuları getirme hatası:', error);
-    res.status(500).json({ error: 'Randevular getirilemedi.' });
+    res.status(500).json({ error: 'Randevular getirilemedi.', details: error.message });
   }
 });
 
@@ -459,11 +482,9 @@ router.patch('/:id/confirm', async (req, res) => {
       where: { id },
       data: { status: 'CONFIRMED' },
       include: {
-        customer: {
-          include: { pushToken: true }
-        },
+        customer: true,
         business: {
-          include: { owner: { include: { pushToken: true } } }
+          include: { owner: true }
         },
         service: true
       }
@@ -520,11 +541,9 @@ router.patch('/:id/reject', async (req, res) => {
       where: { id },
       data: { status: 'REJECTED' },
       include: {
-        customer: {
-          include: { pushToken: true }
-        },
+        customer: true,
         business: {
-          include: { owner: { include: { pushToken: true } } }
+          include: { owner: true }
         },
         service: true
       }
@@ -581,11 +600,9 @@ router.patch('/:id/complete', async (req, res) => {
       where: { id },
       data: { status: 'COMPLETED' },
       include: {
-        customer: {
-          include: { pushToken: true }
-        },
+        customer: true,
         business: {
-          include: { owner: { include: { pushToken: true } } }
+          include: { owner: true }
         },
         service: true
       }

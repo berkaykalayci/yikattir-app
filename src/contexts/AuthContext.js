@@ -39,15 +39,20 @@ export const AuthProvider = ({ children }) => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
         
         Promise.race([
-          axios.get(`${API_BASE_URL}/auth/profile`, { timeout: 2000 }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
-        ]).catch((error) => {
-          logError('AuthContext', 'Token kontrolü başarısız');
-          setUser(null);
-          setToken(null);
-          AsyncStorage.removeItem('authToken');
-          AsyncStorage.removeItem('user');
-          delete axios.defaults.headers.common['Authorization'];
+          axios.get(`${API_BASE_URL}/auth/profile`, { timeout: 5000 }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+        ]).then(() => {
+        }).catch((error) => {
+          if (error.response && error.response.status === 401) {
+            logError('AuthContext', 'Token kontrolü başarısız - Geçersiz token');
+            setUser(null);
+            setToken(null);
+            AsyncStorage.removeItem('authToken');
+            AsyncStorage.removeItem('user');
+            delete axios.defaults.headers.common['Authorization'];
+          } else {
+            logError('AuthContext', 'Token kontrolü başarısız - Bağlantı hatası');
+          }
         });
       }
     } catch (error) {

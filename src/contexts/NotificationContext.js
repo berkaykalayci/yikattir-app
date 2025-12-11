@@ -1,14 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 import io from 'socket.io-client';
 import API_BASE_URL from '../config/api';
 import { logError } from '../utils/errorMessages';
-import {
-  registerForPushNotificationsAsync,
-  addNotificationReceivedListener,
-  addNotificationResponseReceivedListener,
-} from '../services/pushNotificationService';
 
 const NotificationContext = createContext(null);
 
@@ -17,8 +12,6 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const notificationListener = useRef(null);
-  const responseListener = useRef(null);
 
   const loadNotifications = useCallback(async () => {
     if (!user?.id) {
@@ -45,11 +38,6 @@ export function NotificationProvider({ children }) {
   useEffect(() => {
     if (user?.id) {
       loadNotifications();
-      setTimeout(() => {
-        registerForPushNotificationsAsync(user.id).catch((error) => {
-          logError('NotificationContext', 'Push notification kaydı hatası', error);
-        });
-      }, 1000);
     }
   }, [user?.id, loadNotifications]);
 
@@ -75,38 +63,6 @@ export function NotificationProvider({ children }) {
       socket.disconnect();
     };
   }, [user?.id]);
-
-  useEffect(() => {
-    notificationListener.current = addNotificationReceivedListener((notification) => {
-      const notificationData = {
-        id: notification.request.identifier,
-        title: notification.request.content.title,
-        message: notification.request.content.body,
-        type: notification.request.content.data?.type || 'appointment',
-        isRead: false,
-        createdAt: new Date().toISOString(),
-      };
-      setNotifications(prev => [notificationData, ...prev]);
-      setUnreadCount(prev => prev + 1);
-      loadNotifications();
-    });
-
-    responseListener.current = addNotificationResponseReceivedListener((response) => {
-      const notificationId = response.notification.request.content.data?.notificationId;
-      if (notificationId) {
-        loadNotifications();
-      }
-    });
-
-    return () => {
-      if (notificationListener.current) {
-        notificationListener.current.remove();
-      }
-      if (responseListener.current) {
-        responseListener.current.remove();
-      }
-    };
-  }, [loadNotifications]);
 
   const markAsRead = useCallback(async (notificationId) => {
     try {

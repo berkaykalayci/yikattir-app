@@ -16,10 +16,10 @@ export function AppointmentsProvider({ children }) {
     
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/appointments/customer/${user.id}`);
+      const response = await axios.get(`${API_BASE_URL}/appointments/customer/${user.id}`, { timeout: 10000 });
       setAppointments(response.data || []);
     } catch (error) {
-      logError('AppointmentsContext', 'Randevular yüklenirken hata');
+      logError('AppointmentsContext', 'Randevular yüklenirken hata', error);
       setAppointments([]);
     } finally {
       setLoading(false);

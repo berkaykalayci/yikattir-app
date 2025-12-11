@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "922008240724",
+    "project_id": "yikattir-notifications",
+    "storage_bucket": "yikattir-notifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:922008240724:android:a462ef5cfa5d8174e223c1",
+        "android_client_info": {
+          "package_name": "com.yikattir.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHsz7NylPduoGedQvGj_ErT5WZRX48vHA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

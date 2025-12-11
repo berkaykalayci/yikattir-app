@@ -13,7 +13,10 @@ export function BusinessProvider({ children }) {
   const { user } = useAuth();
 
   useEffect(() => {
-    loadBusinesses();
+    const timer = setTimeout(() => {
+      loadBusinesses();
+    }, 500);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -70,13 +73,6 @@ export function BusinessProvider({ children }) {
       setBusinesses(response.data || []);
     } catch (error) {
       logError('BusinessContext', 'İşletmeler yüklenirken hata', error);
-      if (__DEV__) {
-        console.error('BusinessContext hata detayları:', {
-          url: `${API_BASE_URL}/businesses`,
-          error: error.response?.data || error.message,
-          status: error.response?.status,
-        });
-      }
       setBusinesses([]);
     } finally {
       setLoading(false);
