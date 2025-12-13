@@ -66,15 +66,43 @@ export default function ScheduleScreen({ navigation }) {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const loadSlotsForDate = async (d) => {
+  const loadSlotsForDate = async (d, bid = null) => {
+    const targetBusinessId = bid || businessId;
+    if (!targetBusinessId) {
+      if (__DEV__) {
+        console.log('[ScheduleScreen] businessId yok, slotlar yüklenemiyor');
+      }
+      setSlots([]);
+      return;
+    }
+    
     try {
       setLoadingSlots(true);
       const dateParam = formatDateParam(d);
-      const url = `${API_BASE_URL}/businesses/${businessId}/available-slots?date=${dateParam}`;
-      const resp = await axios.get(url);
-      setSlots(resp.data.slots || []);
+      const url = `${API_BASE_URL}/businesses/${targetBusinessId}/available-slots?date=${dateParam}`;
+      
+      if (__DEV__) {
+        console.log('[ScheduleScreen] Slot yükleme:', { businessId: targetBusinessId, date: dateParam, url });
+      }
+      
+      const resp = await axios.get(url, { timeout: 10000 });
+      const slotsData = resp.data.slots || [];
+      
+      if (__DEV__) {
+        console.log('[ScheduleScreen] Slotlar alındı:', { count: slotsData.length });
+      }
+      
+      setSlots(slotsData);
     } catch (error) {
-      logError('ScheduleScreen', 'Slotlar yüklenirken hata');
+      if (__DEV__) {
+        console.error('[ScheduleScreen] Slot yükleme hatası:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          url: `${API_BASE_URL}/businesses/${targetBusinessId}/available-slots?date=${formatDateParam(d)}`
+        });
+      }
+      logError('ScheduleScreen', 'Slotlar yüklenirken hata', error);
       setSlots([]);
     } finally {
       setLoadingSlots(false);
@@ -107,6 +135,11 @@ export default function ScheduleScreen({ navigation }) {
       setWorkingHours(formattedHours);
       if (typeof businessData.slotIntervalMin === 'number') {
         setSlotIntervalMin(String(businessData.slotIntervalMin));
+      }
+      
+      // businessId set edildikten sonra slotları yükle
+      if (foundBusinessId) {
+        await loadSlotsForDate(selectedDate, foundBusinessId);
       }
       
     } catch (error) {

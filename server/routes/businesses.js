@@ -262,13 +262,24 @@ router.get('/:businessId/available-slots', async (req, res) => {
       return acc;
     }, {});
 
-    // Engellenmiş saatleri Set olarak sakla
-    const blockedTimes = new Set(blockedSlots.map(bs => bs.time));
+    // Engellenmiş saatleri Set olarak sakla (null değerleri filtrele)
+    const blockedTimes = new Set(blockedSlots.filter(bs => bs.time).map(bs => bs.time));
 
     // Zaman stringini dakika cinsinden çeviriciler
     const parseHm = (hm) => {
-      const [h, m] = hm.split(':').map(Number);
-      return h * 60 + (m || 0);
+      if (!hm || typeof hm !== 'string') {
+        throw new Error(`Geçersiz saat formatı: ${hm}`);
+      }
+      const parts = hm.split(':');
+      if (parts.length !== 2) {
+        throw new Error(`Geçersiz saat formatı: ${hm}`);
+      }
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) {
+        throw new Error(`Geçersiz saat formatı: ${hm}`);
+      }
+      return h * 60 + m;
     };
     const formatHm = (mins) => {
       const h = Math.floor(mins / 60);
@@ -277,6 +288,12 @@ router.get('/:businessId/available-slots', async (req, res) => {
       const mm = m.toString().padStart(2, '0');
       return `${hh}:${mm}`;
     };
+
+    // Saat formatlarını kontrol et
+    if (!workingHour.openTime || !workingHour.closeTime) {
+      console.error('Çalışma saatleri eksik:', { openTime: workingHour.openTime, closeTime: workingHour.closeTime });
+      return res.json({ date, slots: [] });
+    }
 
     const startMin = parseHm(workingHour.openTime);
     const endMin = parseHm(workingHour.closeTime);
@@ -298,8 +315,14 @@ router.get('/:businessId/available-slots', async (req, res) => {
 
     return res.json({ date, intervalMin: interval, slots });
   } catch (error) {
-    console.error('Uygun saatler oluşturulurken hata:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    console.error('Uygun saatler oluşturulurken hata:', {
+      message: error.message,
+      stack: error.stack,
+      businessId: req.params.businessId,
+      date: req.query.date,
+      error: error
+    });
+    res.status(500).json({ error: 'Sunucu hatası', details: error.message });
   }
 });
 
