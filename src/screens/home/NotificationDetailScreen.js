@@ -53,7 +53,21 @@ export default function NotificationDetailScreen({ navigation, route }) {
         return (
           <TouchableOpacity 
             style={styles.actionButton}
-            onPress={() => navigation.navigate('Appointments')}
+            onPress={() => {
+              // HomeTabs navigation'a git ve Profile stack'teki Appointments ekranına yönlendir
+              const homeTabsNavigation = navigation.getParent()?.getParent();
+              if (homeTabsNavigation) {
+                homeTabsNavigation.navigate('Profile', {
+                  screen: 'AppointmentHistory',
+                  params: {}
+                });
+                // Bildirim detayından geri dön
+                navigation.goBack();
+              } else {
+                // Fallback: Appointments ekranına git
+                navigation.navigate('Appointments');
+              }
+            }}
           >
             <Ionicons name="calendar-outline" size={20} color="white" />
             <Text style={styles.actionButtonText}>Randevularımı Gör</Text>
@@ -131,7 +145,15 @@ export default function NotificationDetailScreen({ navigation, route }) {
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            // Geri git, eğer geri gidilecek bir ekran yoksa Notifications ekranına git
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              // Fallback: Notifications ekranına git
+              navigation.navigate('Notifications');
+            }
+          }}
         >
           <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>

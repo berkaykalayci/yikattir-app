@@ -19,7 +19,10 @@ const Stack = createNativeStackNavigator();
 
 export default function ProfileStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ headerShown: false }}
+      initialRouteName="ProfileHome"
+    >
       <Stack.Screen name="ProfileHome" component={ProfileScreen} />
       <Stack.Screen name="ProfileInfo" component={ProfileInfoScreen} />
       <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />

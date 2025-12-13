@@ -64,7 +64,20 @@ export default function AppointmentDetailScreen({ navigation, route }) {
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            // Geri git, eğer geri gidilecek bir ekran yoksa ProfileHome'a git
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              // Fallback: ProfileHome'a git
+              const homeTabsNavigation = navigation.getParent()?.getParent();
+              if (homeTabsNavigation) {
+                homeTabsNavigation.navigate('Profile', {
+                  screen: 'ProfileHome'
+                });
+              }
+            }
+          }}
         >
           <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
