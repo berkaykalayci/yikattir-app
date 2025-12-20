@@ -65,16 +65,16 @@ export default function AppointmentDetailScreen({ navigation, route }) {
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => {
-            // Geri git, eğer geri gidilecek bir ekran yoksa ProfileHome'a git
+            // Önce geri gitmeyi dene
             if (navigation.canGoBack()) {
               navigation.goBack();
             } else {
-              // Fallback: ProfileHome'a git
-              const homeTabsNavigation = navigation.getParent()?.getParent();
-              if (homeTabsNavigation) {
-                homeTabsNavigation.navigate('Profile', {
-                  screen: 'ProfileHome'
-                });
+              // Eğer geri gidilecek bir ekran yoksa, AppointmentHistory'ye git
+              // Eğer o da yoksa ProfileHome'a git
+              try {
+                navigation.navigate('AppointmentHistory');
+              } catch (error) {
+                navigation.navigate('ProfileHome');
               }
             }
           }}

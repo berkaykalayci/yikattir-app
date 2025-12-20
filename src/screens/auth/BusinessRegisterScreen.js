@@ -160,7 +160,11 @@ export default function BusinessRegisterScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} keyboardVerticalOffset={80}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        style={{ flex: 1 }} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="white" />
@@ -173,10 +177,11 @@ export default function BusinessRegisterScreen({ navigation }) {
         style={styles.scrollView} 
         contentContainerStyle={[
           styles.content, 
-          { paddingTop: Math.max(insets.top, 16) + 60 + 16 }
+          { paddingTop: Math.max(insets.top, 16) + 60 + 16, paddingBottom: Math.max(insets.bottom, 24) + 24 }
         ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        showsVerticalScrollIndicator={false}
       >
         <View style={{ width: '100%' }}>
           <Text style={styles.label}>İŞLETME ADI</Text>
@@ -271,11 +276,25 @@ export default function BusinessRegisterScreen({ navigation }) {
         </View>
         <View style={{ width: '100%' }}>
           <Text style={styles.label}>ŞİFRE</Text>
-          <TextInput style={styles.underline} value={form.password} onChangeText={(t)=>update('password',t)} secureTextEntry />
+          <TextInput 
+            style={styles.underline} 
+            value={form.password} 
+            onChangeText={(t)=>update('password',t)} 
+            secureTextEntry
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
         </View>
         <View style={{ width: '100%' }}>
           <Text style={styles.label}>ŞİFRE ONAY</Text>
-          <TextInput style={styles.underline} value={form.passwordConfirm} onChangeText={(t)=>update('passwordConfirm',t)} secureTextEntry />
+          <TextInput 
+            style={styles.underline} 
+            value={form.passwordConfirm} 
+            onChangeText={(t)=>update('passwordConfirm',t)} 
+            secureTextEntry
+            returnKeyType="done"
+            onSubmitEditing={submit}
+          />
         </View>
 
         <View style={styles.termsContainer}>

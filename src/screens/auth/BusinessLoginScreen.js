@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,7 +26,6 @@ export default function BusinessLoginScreen({ navigation }) {
         Alert.alert('Giriş Hatası', result.error);
       }
     } catch (error) {
-      logError('$(basename "$file" .js)', 'Hata');
       Alert.alert('Hata', 'Giriş işlemi başarısız');
     } finally {
       setLoading(false);
@@ -36,8 +35,8 @@ export default function BusinessLoginScreen({ navigation }) {
   return (
     <KeyboardAvoidingView 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -47,57 +46,70 @@ export default function BusinessLoginScreen({ navigation }) {
         <View style={styles.placeholder} />
       </View>
       
-      <View style={styles.content}>
-        <View style={styles.welcomeSection}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="business" size={40} color="#059669" />
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { minHeight: '100%' }
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          <View style={styles.welcomeSection}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="business" size={40} color="#059669" />
+            </View>
+            <Text style={styles.welcomeTitle}>İşletme Paneli</Text>
+            <Text style={styles.welcomeSubtitle}>İşletme hesabınızla giriş yapın</Text>
           </View>
-          <Text style={styles.welcomeTitle}>İşletme Paneli</Text>
-          <Text style={styles.welcomeSubtitle}>İşletme hesabınızla giriş yapın</Text>
-        </View>
-        
-        <View style={styles.card}>
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#6b7280" style={styles.inputIcon} />
-            <TextInput 
-              placeholder="E-Posta" 
-              style={styles.input} 
-              value={email} 
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#6b7280" style={styles.inputIcon} />
-            <TextInput 
-              placeholder="Şifre" 
-              style={styles.input} 
-              secureTextEntry 
-              value={password} 
-              onChangeText={setPassword} 
-            />
-          </View>
-          <TouchableOpacity 
-            style={[styles.btn, loading && styles.btnDisabled]} 
-            onPress={handleBusinessLogin}
-            disabled={loading}
-          >
-            <Text style={styles.btnText}>{loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}</Text>
-          </TouchableOpacity>
-          <Text style={styles.hint}>
-            İşletme hesabın yok mu?{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('BusinessRegister')}>
-              Kayıt ol !
+          
+          <View style={styles.card}>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+              <TextInput 
+                placeholder="E-Posta" 
+                style={styles.input} 
+                value={email} 
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                returnKeyType="next"
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+              <TextInput 
+                placeholder="Şifre" 
+                style={styles.input} 
+                secureTextEntry 
+                value={password} 
+                onChangeText={setPassword}
+                returnKeyType="done"
+                onSubmitEditing={handleBusinessLogin}
+              />
+            </View>
+            <TouchableOpacity 
+              style={[styles.btn, loading && styles.btnDisabled]} 
+              onPress={handleBusinessLogin}
+              disabled={loading}
+            >
+              <Text style={styles.btnText}>{loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}</Text>
+            </TouchableOpacity>
+            <Text style={styles.hint}>
+              İşletme hesabın yok mu?{' '}
+              <Text style={styles.link} onPress={() => navigation.navigate('BusinessRegister')}>
+                Kayıt ol !
+              </Text>
             </Text>
-          </Text>
-          <TouchableOpacity style={styles.customerLink} onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.customerLinkText}>Müşteri Girişi</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.customerLink} onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.customerLinkText}>Müşteri Girişi</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ScrollView>
       
-      <View style={styles.brandContainer}>
+      <View style={[styles.brandContainer, { bottom: Math.max(insets.bottom, 40) }]}>
         <Text style={styles.brandText}>YIKATTIR</Text>
       </View>
     </KeyboardAvoidingView>
@@ -119,11 +131,21 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     zIndex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 80,
+    paddingBottom: 120,
+    paddingHorizontal: 16,
+  },
+  content: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
   },
   backBtn: { 
     width: 40, 

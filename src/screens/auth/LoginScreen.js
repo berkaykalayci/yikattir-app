@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, Text, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, TextInput, Text, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,8 +30,8 @@ export default function LoginScreen({ navigation }) {
   return (
     <KeyboardAvoidingView 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -41,58 +41,71 @@ export default function LoginScreen({ navigation }) {
         <View style={styles.placeholder} />
       </View>
       
-      <View style={styles.content}>
-        <View style={styles.welcomeSection}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="person" size={40} color="#0F4C4C" />
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { minHeight: '100%' }
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          <View style={styles.welcomeSection}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="person" size={40} color="#0F4C4C" />
+            </View>
+            <Text style={styles.welcomeTitle}>Hoş Geldiniz!</Text>
           </View>
-          <Text style={styles.welcomeTitle}>Hoş Geldiniz!</Text>
-        </View>
-        
-        <View style={styles.card}>
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#6b7280" style={styles.inputIcon} />
-            <TextInput 
-              placeholder="E-Posta" 
-              style={styles.input} 
-              value={email} 
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#6b7280" style={styles.inputIcon} />
-            <TextInput 
-              placeholder="Şifre" 
-              style={styles.input} 
-              secureTextEntry 
-              value={password} 
-              onChangeText={setPassword} 
-            />
-          </View>
-          <TouchableOpacity 
-            style={[styles.btn, loading && styles.btnDisabled]} 
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Text style={styles.btnText}>
-              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+          
+          <View style={styles.card}>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+              <TextInput 
+                placeholder="E-Posta" 
+                style={styles.input} 
+                value={email} 
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                returnKeyType="next"
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+              <TextInput 
+                placeholder="Şifre" 
+                style={styles.input} 
+                secureTextEntry 
+                value={password} 
+                onChangeText={setPassword}
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
+              />
+            </View>
+            <TouchableOpacity 
+              style={[styles.btn, loading && styles.btnDisabled]} 
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.btnText}>
+                {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+              </Text>
+            </TouchableOpacity>
+            <Text style={styles.hint}>
+              Hesabın yok mu?{' '}
+              <Text style={styles.link} onPress={() => navigation.navigate('Register')}>
+                Kayıt ol !
+              </Text>
             </Text>
-          </TouchableOpacity>
-          <Text style={styles.hint}>
-            Hesabın yok mu?{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('Register')}>
-              Kayıt ol !
-            </Text>
-          </Text>
-          <TouchableOpacity style={styles.businessLink} onPress={() => navigation.navigate('BusinessLogin')}>
-            <Text style={styles.businessLinkText}>İşletme Girişi</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.businessLink} onPress={() => navigation.navigate('BusinessLogin')}>
+              <Text style={styles.businessLinkText}>İşletme Girişi</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ScrollView>
       
-      <View style={styles.brandContainer}>
+      <View style={[styles.brandContainer, { bottom: Math.max(insets.bottom, 40) }]}>
         <Text style={styles.brandText}>YIKATTIR</Text>
       </View>
     </KeyboardAvoidingView>
@@ -114,11 +127,21 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     zIndex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 80,
+    paddingBottom: 120,
+    paddingHorizontal: 16,
+  },
+  content: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
   },
   backBtn: { 
     width: 40, 

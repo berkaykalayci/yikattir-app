@@ -184,7 +184,11 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} keyboardVerticalOffset={80}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        style={{ flex: 1 }} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="white" />
@@ -197,10 +201,11 @@ export default function RegisterScreen({ navigation }) {
         style={styles.scrollView} 
         contentContainerStyle={[
           styles.content, 
-          { paddingTop: Math.max(insets.top, 16) + 60 + 16 }
+          { paddingTop: Math.max(insets.top, 16) + 60 + 16, paddingBottom: Math.max(insets.bottom, 24) + 24 }
         ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        showsVerticalScrollIndicator={false}
       >
         {[
           ['AD', 'name'],
@@ -230,6 +235,8 @@ export default function RegisterScreen({ navigation }) {
                 keyboardType={keyboardType}
                 placeholder={placeholder}
                 placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                returnKeyType={key === 'confirm' ? 'done' : 'next'}
+                blurOnSubmit={key !== 'confirm'}
               />
             </View>
           );

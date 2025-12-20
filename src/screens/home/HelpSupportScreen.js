@@ -44,7 +44,7 @@ export default function HelpSupportScreen({ navigation }) {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Sıkça Sorulan Sorular</Text>
           <Text style={styles.sectionText}>Uygulama kullanımıyla ilgili en yaygın soruların yanıtlarını görüntüleyin.</Text>
-          <TouchableOpacity style={styles.cta} onPress={() => openLink('https://yikattir.app/sss')}>
+          <TouchableOpacity style={styles.cta} onPress={() => openLink('https://yikattir.com')}>
             <Ionicons name="help-circle-outline" size={20} color="white" />
             <Text style={styles.ctaText}>SSS'yi Aç</Text>
           </TouchableOpacity>
