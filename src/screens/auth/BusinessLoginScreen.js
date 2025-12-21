@@ -48,12 +48,11 @@ export default function BusinessLoginScreen({ navigation }) {
       
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { minHeight: '100%' }
-        ]}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+        scrollEnabled={true}
       >
         <View style={styles.content}>
           <View style={styles.welcomeSection}>
@@ -141,6 +140,7 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     paddingBottom: 120,
     paddingHorizontal: 16,
+    minHeight: Platform.OS === 'android' ? undefined : '100%',
   },
   content: {
     width: '100%',

@@ -206,6 +206,8 @@ export default function RegisterScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+        scrollEnabled={true}
       >
         {[
           ['AD', 'name'],

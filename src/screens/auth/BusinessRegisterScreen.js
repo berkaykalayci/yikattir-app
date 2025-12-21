@@ -182,6 +182,8 @@ export default function BusinessRegisterScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+        scrollEnabled={true}
       >
         <View style={{ width: '100%' }}>
           <Text style={styles.label}>İŞLETME ADI</Text>

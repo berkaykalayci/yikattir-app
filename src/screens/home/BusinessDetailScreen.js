@@ -236,11 +236,7 @@ export default function BusinessDetailScreen({ navigation, route }) {
   }, [business?.id, business?.lat, business?.lng]);
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 80, 100) }]}
-    >
+    <View style={styles.container}>
       <View style={[styles.headerBar, { paddingTop: Math.max((insets?.top || 0) - 12, 0) }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
@@ -255,6 +251,17 @@ export default function BusinessDetailScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
       </View>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { 
+            paddingTop: Math.max((insets?.top || 0) + 52, 68),
+            paddingBottom: Math.max(insets.bottom + 80, 100) 
+          }
+        ]}
+      >
       <View style={styles.topInfo}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
           <Ionicons name="car-outline" size={16} color={'#0F4C4C'} />
@@ -467,14 +474,25 @@ export default function BusinessDetailScreen({ navigation, route }) {
       <TouchableOpacity style={styles.cta} onPress={() => navigation.navigate('Booking', { item: business })}>
         <Text style={styles.ctaText}>Randevu Al</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#fff' },
+  scrollView: { flex: 1 },
   scrollContent: { flexGrow: 1 },
-  headerBar: { backgroundColor: '#0F4C4C', paddingHorizontal: 16, paddingBottom: 8 },
+  headerBar: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    backgroundColor: '#0F4C4C', 
+    paddingHorizontal: 16, 
+    paddingBottom: 8 
+  },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 36, paddingHorizontal: 0, marginBottom: 0 },
   iconBtn: { width: 36, height: 36, borderRadius: 18,  alignItems: 'center', justifyContent: 'center' },
   topInfo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: 0, backgroundColor: '#fff' },
