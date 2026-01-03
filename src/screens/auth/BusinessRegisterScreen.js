@@ -9,7 +9,8 @@ export default function BusinessRegisterScreen({ navigation }) {
   const { register } = useAuth();
   const insets = useSafeAreaInsets();
   const [form, setForm] = useState({ 
-    name: '', 
+    name: '', // İşletme Adı
+    ownerName: '', // İşletme Sahibi Ad Soyad
     tcNo: '', 
     vergiNo: '', 
     phone: '', 
@@ -115,6 +116,7 @@ export default function BusinessRegisterScreen({ navigation }) {
 
   const submit = async () => {
     if (!form.name.trim()) return Alert.alert('Uyarı', 'İşletme adı zorunlu');
+    if (!form.ownerName.trim()) return Alert.alert('Uyarı', 'İşletme sahibi ad soyad zorunlu');
     if (!form.tcNo.trim()) return Alert.alert('Uyarı', 'T.C. Kimlik No zorunlu');
     if (!validateTCNo(form.tcNo.trim())) return Alert.alert('Uyarı', 'T.C. Kimlik No 11 haneli olmalıdır.');
     if (!form.vergiNo.trim()) return Alert.alert('Uyarı', 'Vergi No zorunlu');
@@ -133,7 +135,7 @@ export default function BusinessRegisterScreen({ navigation }) {
     try {
       setLoading(true);
       const result = await register(
-        form.name.trim(),
+        form.name.trim(), // name (fallback için)
         form.email.trim(),
         form.phone.trim(),
         form.password,
@@ -142,7 +144,9 @@ export default function BusinessRegisterScreen({ navigation }) {
         'BUSINESS', // role
         form.address.trim(), // address
         form.tcNo.trim(), // tcNo
-        form.vergiNo.trim() // vergiNo
+        form.vergiNo.trim(), // vergiNo
+        form.ownerName.trim(), // ownerName
+        form.name.trim() // businessName
       );
       
       if (result.success) {
@@ -201,6 +205,10 @@ export default function BusinessRegisterScreen({ navigation }) {
         <View style={{ width: '100%' }}>
           <Text style={styles.label}>İŞLETME ADI</Text>
           <TextInput style={styles.underline} value={form.name} onChangeText={(t)=>update('name',t)} />
+        </View>
+        <View style={{ width: '100%' }}>
+          <Text style={styles.label}>İŞLETME SAHİBİ AD SOYAD</Text>
+          <TextInput style={styles.underline} value={form.ownerName} onChangeText={(t)=>update('ownerName',t)} />
         </View>
         <View style={{ width: '100%' }}>
           <Text style={styles.label}>T.C. KİMLİK NO</Text>

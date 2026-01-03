@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, phone, password, city, district, role = 'CUSTOMER', address = '', tcNo = '', vergiNo = '') => {
+  const register = async (name, email, phone, password, city, district, role = 'CUSTOMER', address = '', tcNo = '', vergiNo = '', ownerName = '', businessName = '') => {
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, {
         name,
@@ -104,6 +104,8 @@ export const AuthProvider = ({ children }) => {
         tcNo,
         vergiNo,
         role,
+        ownerName,
+        businessName,
       });
 
       // BUSINESS rolü için token döndürülmez, onay bekliyor mesajı döner

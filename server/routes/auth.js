@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 
 // Kullanıcı kayıt
 router.post('/register', async (req, res) => {
-  const { name, email, phone, password, city, district, address, tcNo, vergiNo, role = 'CUSTOMER' } = req.body;
+  const { name, email, phone, password, city, district, address, tcNo, vergiNo, role = 'CUSTOMER', ownerName, businessName } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'E-posta ve şifre zorunludur.' });
@@ -50,9 +50,12 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Kullanıcı oluştur
+    // BUSINESS rolü için ownerName kullan, diğerleri için name kullan
+    const userName = (role === 'BUSINESS' && ownerName) ? ownerName : name;
+    
     const user = await prisma.user.create({
       data: {
-        name,
+        name: userName,
         email,
         phone,
         password: hashedPassword,
@@ -78,9 +81,12 @@ router.post('/register', async (req, res) => {
 
       console.log(`[REGISTER] BUSINESS kayıt - İşletme oluşturuluyor, isActive: false olarak ayarlanacak`);
       
+      // BUSINESS rolü için businessName kullan, yoksa name kullan
+      const businessNameValue = businessName || name || 'İşletme Adı';
+      
       business = await prisma.business.create({
         data: {
-          name: name || 'İşletme Adı',
+          name: businessNameValue,
           type: 'OTO_YIKAMA',
           address: address || (city && district ? `${district}, ${city}` : 'Adres bilgisi'),
           city: city || 'Şehir',
