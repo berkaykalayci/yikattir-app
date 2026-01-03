@@ -12,7 +12,11 @@ export function AppointmentsProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   const loadAppointments = useCallback(async () => {
-    if (!user?.id) return;
+    // Sadece CUSTOMER rolü için çalış
+    if (!user?.id || user?.role !== 'CUSTOMER') {
+      setAppointments([]);
+      return;
+    }
     
     try {
       setLoading(true);
@@ -32,13 +36,15 @@ export function AppointmentsProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && user?.role === 'CUSTOMER') {
       loadAppointments();
+    } else {
+      setAppointments([]);
     }
-  }, [user?.id]);
+  }, [user?.id, user?.role, loadAppointments]);
 
 
   const refreshAppointments = useCallback(() => {

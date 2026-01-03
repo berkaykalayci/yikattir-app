@@ -14,7 +14,8 @@ export function NotificationProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   const loadNotifications = useCallback(async () => {
-    if (!user?.id) {
+    // Sadece CUSTOMER rolü için çalış
+    if (!user?.id || user?.role !== 'CUSTOMER') {
       setNotifications([]);
       setUnreadCount(0);
       return;
@@ -33,16 +34,20 @@ export function NotificationProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && user?.role === 'CUSTOMER') {
       loadNotifications();
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
     }
-  }, [user?.id, loadNotifications]);
+  }, [user?.id, user?.role, loadNotifications]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    // Sadece CUSTOMER rolü için socket bağlantısı kur
+    if (!user?.id || user?.role !== 'CUSTOMER') return;
 
     const socket = io(API_BASE_URL, {
       transports: ['websocket'],
@@ -62,7 +67,7 @@ export function NotificationProvider({ children }) {
     return () => {
       socket.disconnect();
     };
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   const markAsRead = useCallback(async (notificationId) => {
     try {

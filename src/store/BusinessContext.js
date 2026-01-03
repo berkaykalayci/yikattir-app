@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import io from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,14 +13,21 @@ export function BusinessProvider({ children }) {
   const { user } = useAuth();
 
   useEffect(() => {
+    // Sadece CUSTOMER rolü ve kullanıcı giriş yaptığında yükle
+    if (!user || user.role !== 'CUSTOMER') {
+      setBusinesses([]);
+      return;
+    }
+    
     const timer = setTimeout(() => {
       loadBusinesses();
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [user?.role, user?.id, loadBusinesses]);
 
   useEffect(() => {
-    if (!user) return; // User yoksa socket bağlantısı kurma
+    // Sadece CUSTOMER rolü için socket bağlantısı kur
+    if (!user || user.role !== 'CUSTOMER') return;
     
     let socket;
     try {
@@ -48,7 +55,10 @@ export function BusinessProvider({ children }) {
     });
 
     socket.on('businesses:changed', () => {
-      loadBusinesses();
+      // Sadece CUSTOMER rolü için yükle
+      if (user && user.role === 'CUSTOMER') {
+        loadBusinesses();
+      }
     });
 
       socket.on('error', (error) => {
@@ -63,21 +73,30 @@ export function BusinessProvider({ children }) {
         socket.disconnect();
       }
     };
-  }, [user?.city]);
+  }, [user?.city, user?.role, user?.id, loadBusinesses]);
 
 
-  const loadBusinesses = async () => {
+  const loadBusinesses = useCallback(async () => {
+    // Sadece CUSTOMER rolü ve kullanıcı giriş yaptığında çalış
+    if (!user || user.role !== 'CUSTOMER') {
+      setBusinesses([]);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/businesses`, { timeout: 10000 });
       setBusinesses(response.data || []);
     } catch (error) {
-      logError('BusinessContext', 'İşletmeler yüklenirken hata', error);
+      // Sadece gerçek hataları logla (401, 403 gibi auth hataları değil)
+      if (error.response && error.response.status !== 401 && error.response.status !== 403) {
+        logError('BusinessContext', 'İşletmeler yüklenirken hata', error);
+      }
       setBusinesses([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const addBusiness = (biz) => {
     setBusinesses((prev) => [{ id: Date.now(), rating: 4.5, ...biz }, ...prev]);

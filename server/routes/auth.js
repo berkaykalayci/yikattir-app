@@ -314,6 +314,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
             slotIntervalMin: true,
             imageUrl: true,
             logoUrl: true,
+            setupCompleted: true,
           }
         }
       },

@@ -47,6 +47,7 @@ model Business {
   isOpen       Boolean       @default(true)
   capacity     Int           @default(3)
   slotIntervalMin Int        @default(30)
+  setupCompleted Boolean     @default(false)
   imageUrl     String?
   logoUrl      String?
   lat          Float?

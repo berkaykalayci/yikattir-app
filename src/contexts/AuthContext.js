@@ -72,6 +72,23 @@ export const AuthProvider = ({ children }) => {
 
       const { user: userData, token: authToken } = response.data;
 
+      // Token ve userData kontrolü
+      if (!authToken) {
+        console.error('[AuthContext] Login başarılı ama token döndürülmedi');
+        return { 
+          success: false, 
+          error: 'Giriş başarılı ancak oturum açılamadı. Lütfen tekrar deneyin.' 
+        };
+      }
+
+      if (!userData) {
+        console.error('[AuthContext] Login başarılı ama user data döndürülmedi');
+        return { 
+          success: false, 
+          error: 'Giriş başarılı ancak kullanıcı bilgileri alınamadı. Lütfen tekrar deneyin.' 
+        };
+      }
+
       await AsyncStorage.setItem('authToken', authToken);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
 
@@ -83,10 +100,41 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user: userData };
     } catch (error) {
+      // Detaylı hata loglama
+      if (__DEV__) {
+        console.error('[AuthContext] Giriş hatası detayları:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          url: `${API_BASE_URL}/auth/login`
+        });
+      }
       logError('AuthContext', 'Giriş hatası');
+      
+      // Özel hata mesajı belirleme
+      let errorMessage = 'E-posta veya şifre hatalı. Lütfen tekrar deneyin.';
+      
+      if (error.response?.data?.error) {
+        // Backend'den gelen özel hata mesajı
+        errorMessage = error.response.data.error;
+      } else if (error.response?.status === 401) {
+        // 401 için giriş ekranına uygun mesaj
+        errorMessage = 'Geçersiz e-posta veya şifre. Lütfen tekrar deneyin.';
+      } else if (error.response?.status === 403) {
+        // 403 için backend'den gelen mesajı kullan
+        errorMessage = error.response.data?.error || 'Bu işlem için yetkiniz bulunmamaktadır.';
+      } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        errorMessage = 'İnternet bağlantınızı kontrol edin ve tekrar deneyin.';
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'İstek zaman aşımına uğradı. Lütfen tekrar deneyin.';
+      } else {
+        // Diğer hatalar için genel mesaj
+        errorMessage = getErrorMessage(error) || errorMessage;
+      }
+      
       return { 
         success: false, 
-        error: getErrorMessage(error) || 'E-posta veya şifre hatalı. Lütfen tekrar deneyin.' 
+        error: errorMessage
       };
     }
   };

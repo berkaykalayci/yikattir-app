@@ -27,6 +27,26 @@ export default function BusinessProfileScreen({ navigation }) {
       setLoading(true);
       
       const businessIdResponse = await axios.get(`${API_BASE_URL}/businesses/owner/${user.id}`);
+      
+      if (!businessIdResponse.data || !businessIdResponse.data.id) {
+        // İşletme bulunamadı - varsayılan değerleri kullan
+        setBusiness({
+          name: user.name || 'İşletme Adı',
+          email: user.email || 'email@example.com',
+          phone: user.phone || 'Telefon',
+          address: 'Adres bilgisi',
+          city: user.city || 'Şehir',
+          district: user.district || 'İlçe',
+          isOpen: true,
+          logoUrl: null,
+          rating: 0,
+          totalAppointments: 0,
+          totalCustomers: 0,
+          monthlyRevenue: 0
+        });
+        return;
+      }
+      
       const foundBusinessId = businessIdResponse.data.id;
       setBusinessId(foundBusinessId);
       
@@ -51,7 +71,18 @@ export default function BusinessProfileScreen({ navigation }) {
       setBusiness(businessInfo);
       
     } catch (error) {
+      // Hata durumunda varsayılan değerleri kullan
+      if (__DEV__) {
+        console.error('[BusinessProfileScreen] İşletme profili yüklenirken hata:', error.message, error.response?.status);
+      }
       logError('BusinessProfileScreen', 'İşletme profili yüklenirken hata');
+      
+      // 404 hatası durumunda kullanıcıya bilgi ver
+      if (error.response && error.response.status === 404) {
+        // İşletme bulunamadı - varsayılan değerleri kullan ama kullanıcıya bilgi ver
+        console.log('[BusinessProfileScreen] İşletme kaydı bulunamadı, varsayılan değerler kullanılıyor');
+      }
+      
       setBusiness({
         name: user.name || 'İşletme Adı',
         email: user.email || 'email@example.com',

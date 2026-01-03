@@ -144,7 +144,7 @@ router.get('/owner/:userId', async (req, res) => {
     
     const business = await prisma.business.findFirst({
       where: { ownerId: userId },
-      select: { id: true, name: true }
+      select: { id: true, name: true, setupCompleted: true }
     });
 
     if (!business) {
@@ -155,6 +155,41 @@ router.get('/owner/:userId', async (req, res) => {
   } catch (error) {
     console.error('İşletme bulunurken hata:', error);
     res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// İşletme setup'ını tamamla
+router.post('/setup/complete', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    // İşletmeyi bul
+    const business = await prisma.business.findFirst({
+      where: { ownerId: userId },
+      select: { id: true, setupCompleted: true }
+    });
+
+    if (!business) {
+      return res.status(404).json({ error: 'İşletme bulunamadı' });
+    }
+
+    // Setup'ı tamamla
+    const updatedBusiness = await prisma.business.update({
+      where: { id: business.id },
+      data: { setupCompleted: true },
+      select: { id: true, setupCompleted: true }
+    });
+
+    console.log(`[SETUP] İşletme setup tamamlandı - businessId: ${business.id}, userId: ${userId}`);
+
+    res.json({ 
+      success: true, 
+      message: 'İşletme kurulumu tamamlandı',
+      business: updatedBusiness 
+    });
+  } catch (error) {
+    console.error('Setup tamamlama hatası:', error);
+    res.status(500).json({ error: 'Setup tamamlanırken bir hata oluştu' });
   }
 });
 
