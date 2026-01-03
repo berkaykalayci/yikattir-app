@@ -76,6 +76,8 @@ router.post('/register', async (req, res) => {
         }
       }
 
+      console.log(`[REGISTER] BUSINESS kayıt - İşletme oluşturuluyor, isActive: false olarak ayarlanacak`);
+      
       business = await prisma.business.create({
         data: {
           name: name || 'İşletme Adı',
@@ -86,6 +88,7 @@ router.post('/register', async (req, res) => {
           tcNo: tcNo || null,
           vergiNo: vergiNo || null,
           rating: 0,
+          isActive: false, // Yeni kayıtlar onay bekliyor durumunda başlar - KESINLIKLE false
           isOpen: true,
           capacity: 3,
           ownerId: user.id,
@@ -93,6 +96,19 @@ router.post('/register', async (req, res) => {
           lng: coordinates ? coordinates.lng : null,
         },
       });
+
+      console.log(`[REGISTER] ✅ İşletme oluşturuldu - name: ${business.name}, isActive: ${business.isActive} (veritabanından kontrol)`);
+      
+      // Veritabanından tekrar kontrol et
+      const verifyBusiness = await prisma.business.findUnique({
+        where: { id: business.id },
+        select: { isActive: true }
+      });
+      console.log(`[REGISTER] 🔍 Veritabanı doğrulama - isActive: ${verifyBusiness.isActive}`);
+      
+      if (verifyBusiness.isActive !== false) {
+        console.error(`[REGISTER] ❌❌❌ SORUN: İşletme isActive: ${verifyBusiness.isActive} olarak kaydedilmiş! Beklenen: false`);
+      }
 
       // Yeni işletme oluşturuldu: ilgili şehir odasına liste güncellendi yayını
       try {
@@ -108,7 +124,31 @@ router.post('/register', async (req, res) => {
       // varsayılan çalışma saatleri ve varsayılan hizmetlerin otomatik oluşturulması kaldırıldı.
     }
 
-    // JWT token oluştur
+    // BUSINESS rolü için kayıt sonrası token döndürme - onay bekliyor mesajı döndür
+    if (role === 'BUSINESS') {
+      console.log('BUSINESS kayıt - Token döndürülmüyor, requiresApproval: true');
+      return res.status(201).json({
+        message: 'Kayıt işleminiz başarıyla tamamlandı. Hesabınız yönetici onayı beklemektedir. Onaylandıktan sonra giriş yapabilirsiniz.',
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          city: user.city,
+          district: user.district,
+          role: user.role,
+        },
+        business: business ? {
+          id: business.id,
+          name: business.name,
+          isActive: business.isActive,
+        } : null,
+        requiresApproval: true,
+        // Token kesinlikle döndürülmüyor
+      });
+    }
+
+    // CUSTOMER rolü için token oluştur ve döndür
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -125,10 +165,6 @@ router.post('/register', async (req, res) => {
         district: user.district,
         role: user.role,
       },
-      business: business ? {
-        id: business.id,
-        name: business.name,
-      } : null,
       token,
     });
   } catch (error) {
@@ -158,8 +194,45 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Geçersiz e-posta veya şifre.' });
     }
 
-    // Role kontrolü
-    if (user.role !== role) {
+    // BUSINESS rolü için işletme aktiflik kontrolü (ÖNCE bu kontrol yapılmalı)
+    if (user.role === 'BUSINESS') {
+      console.log(`[LOGIN] BUSINESS kullanıcı giriş denemesi - email: ${user.email}, role: ${user.role}`);
+      
+      const business = await prisma.business.findFirst({
+        where: { ownerId: user.id },
+        select: { id: true, name: true, isActive: true }
+      });
+
+      if (!business) {
+        console.log(`[LOGIN] ❌ İşletme bulunamadı - email: ${user.email}`);
+        return res.status(403).json({ 
+          error: 'İşletme bilgisi bulunamadı. Lütfen destek ekibi ile iletişime geçin.' 
+        });
+      }
+
+      console.log(`[LOGIN] İşletme bulundu - name: ${business.name}, isActive: ${business.isActive} (type: ${typeof business.isActive})`);
+
+      // Kesin kontrol - isActive false veya undefined ise engelle
+      if (business.isActive === false || business.isActive === null || business.isActive === undefined) {
+        console.log(`[LOGIN] ❌ BUSINESS login ENGELLENDİ - isActive: ${business.isActive}, email: ${user.email}, business: ${business.name}`);
+        return res.status(403).json({ 
+          error: 'Hesabınız henüz onaylanmamıştır. Lütfen yöneticinin onaylamasını bekleyin.' 
+        });
+      }
+
+      // Ekstra güvenlik: isActive sadece true ise devam et
+      if (business.isActive !== true) {
+        console.log(`[LOGIN] ❌ BUSINESS login ENGELLENDİ - isActive beklenmeyen değer: ${business.isActive}, email: ${user.email}`);
+        return res.status(403).json({ 
+          error: 'Hesabınız henüz onaylanmamıştır. Lütfen yöneticinin onaylamasını bekleyin.' 
+        });
+      }
+
+      console.log(`[LOGIN] ✅ BUSINESS login ONAYLANDI - isActive: ${business.isActive}, email: ${user.email}`);
+    }
+
+    // Role kontrolü (BUSINESS kontrolünden SONRA yapılmalı)
+    if (role && user.role !== role) {
       return res.status(401).json({ error: 'Bu hesap türü için giriş yapamazsınız.' });
     }
 
@@ -242,6 +315,24 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+    }
+
+    // BUSINESS rolü için aktif işletme kontrolü
+    if (user.role === 'BUSINESS') {
+      console.log(`[PROFILE] BUSINESS kullanıcı profil isteği - email: ${user.email}`);
+      
+      const activeBusiness = user.businesses?.find(b => b.isActive === true);
+      
+      if (!activeBusiness) {
+        console.log(`[PROFILE] ❌ BUSINESS profil ENGELLENDİ - Aktif işletme yok, email: ${user.email}`);
+        // Token'ı geçersiz kıl
+        return res.status(403).json({ 
+          error: 'Hesabınız henüz onaylanmamıştır. Lütfen yöneticinin onaylamasını bekleyin.',
+          requiresApproval: true
+        });
+      }
+      
+      console.log(`[PROFILE] ✅ BUSINESS profil ONAYLANDI - Aktif işletme: ${activeBusiness.name}, email: ${user.email}`);
     }
 
     res.json(user);

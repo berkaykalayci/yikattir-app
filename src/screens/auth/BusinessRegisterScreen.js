@@ -146,7 +146,20 @@ export default function BusinessRegisterScreen({ navigation }) {
       );
       
       if (result.success) {
-        Alert.alert('Başarılı', 'İşletme kaydınız oluşturuldu');
+        if (result.requiresApproval) {
+          Alert.alert(
+            'Kayıt Başarılı', 
+            result.message || 'İşletme kaydınız oluşturuldu. Hesabınız yönetici onayı beklemektedir. Onaylandıktan sonra giriş yapabilirsiniz.',
+            [
+              {
+                text: 'Tamam',
+                onPress: () => navigation.navigate('BusinessLogin')
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Başarılı', 'İşletme kaydınız oluşturuldu');
+        }
       } else {
         Alert.alert('Kayıt Hatası', result.error);
       }

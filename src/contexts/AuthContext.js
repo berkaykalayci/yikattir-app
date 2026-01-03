@@ -106,8 +106,32 @@ export const AuthProvider = ({ children }) => {
         role,
       });
 
+      // BUSINESS rolü için token döndürülmez, onay bekliyor mesajı döner
+      if (role === 'BUSINESS' || response.data.requiresApproval) {
+        // BUSINESS rolü için kesinlikle token kaydetme
+        console.log('BUSINESS kayıt - Token kaydedilmiyor, requiresApproval:', response.data.requiresApproval);
+        return { 
+          success: true, 
+          requiresApproval: true,
+          message: response.data.message || 'Kayıt işleminiz başarıyla tamamlandı. Hesabınız yönetici onayı beklemektedir.',
+          user: response.data.user 
+        };
+      }
+
+      // CUSTOMER rolü için token döndürülür
       const { user: userData, token: authToken } = response.data;
 
+      // Token kontrolü - token yoksa kaydetme
+      if (!authToken) {
+        console.log('Token yok - kayıt başarısız');
+        return { 
+          success: false, 
+          error: 'Kayıt işlemi tamamlandı ancak giriş yapılamadı. Lütfen giriş ekranından giriş yapın.' 
+        };
+      }
+
+      // Token varsa kaydet
+      console.log('Token kaydediliyor - CUSTOMER kayıt');
       await AsyncStorage.setItem('authToken', authToken);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
 
